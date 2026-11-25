@@ -103,10 +103,16 @@
     App.render(UI.appLayout('<div class="card center"><div class="empty">' + UI.icon('lock', 36) + '<h2>Akses ditolak</h2><p>Halaman ini hanya dapat diakses oleh role tertentu. Anda masuk sebagai <b>' + UI.esc(ROLES[Auth.user().role]) + '</b>.</p><a class="btn btn-primary" href="#/dashboard">Kembali ke Dashboard</a></div></div>', { title: 'Akses Ditolak' }));
   }
 
+  var lastKey = null;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.body.classList.remove('nav-open'); });
   var App = window.App = {
     render: function (html) {
       var root = document.getElementById('app');
+      var key = location.hash.split('?')[0] + '|' + (location.hash.split('?')[1] || '');
+      var fresh = key !== lastKey; lastKey = key;
+      document.body.classList.remove('nav-open', 'no-scroll');
       root.innerHTML = html;
+      UI.animate(root, fresh);
       var s = DB.settings();
       document.title = s.siteName + ' – ' + s.tagline;
       var fav = document.getElementById('favicon');
@@ -114,11 +120,22 @@
       window.scrollTo(0, 0);
       // menu mobile publik
       var burger = document.getElementById('burger');
-      if (burger) burger.onclick = function () { var n = document.getElementById('mainnav'); var o = n.classList.toggle('open'); burger.setAttribute('aria-expanded', o); };
+      if (burger) {
+        var setNav = function (o) {
+          document.body.classList.toggle('nav-open', o);
+          burger.setAttribute('aria-expanded', o); burger.setAttribute('aria-label', o ? 'Tutup menu' : 'Buka menu');
+        };
+        burger.onclick = function () { setNav(!document.body.classList.contains('nav-open')); };
+        var tbm = document.getElementById('tb-menu'); if (tbm) tbm.onclick = function () { setNav(!document.body.classList.contains('nav-open')); };
+        var scrim = document.getElementById('navscrim'); if (scrim) scrim.onclick = function () { setNav(false); };
+        UI.$$('#mainnav a').forEach(function (a) { a.addEventListener('click', function () { setNav(false); }); });
+      }
       // sidebar mobile
       var ba = document.getElementById('burger-app'), sb = document.getElementById('sidebar'), ov = document.getElementById('side-overlay');
       if (ba && sb) {
         ba.onclick = function () { sb.classList.add('open'); ov.classList.add('open'); };
+        var tbs = document.getElementById('tb-side'); if (tbs) tbs.onclick = function () { sb.classList.add('open'); ov.classList.add('open'); };
+        UI.$$('#sidebar a').forEach(function (a) { a.addEventListener('click', function () { sb.classList.remove('open'); ov.classList.remove('open'); }); });
         ov.onclick = function () { sb.classList.remove('open'); ov.classList.remove('open'); };
       }
       UI.$$('[data-logout]').forEach(function (a) {

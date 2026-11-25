@@ -286,16 +286,42 @@
   function publicLayout(content, active) {
     var s = DB.settings(), u = Auth.user();
     var nav = [['#/', 'Beranda', 'home'], ['#/programs', 'Program Pelatihan', 'programs'], ['#/trainers', 'Trainer', 'trainers'], ['#/articles', 'Artikel', 'articles'], ['#/about', 'Tentang Kami', 'about'], ['#/help', 'Bantuan', 'help']];
-    var navHTML = nav.map(function (n) { return '<a href="' + n[0] + '" class="' + (active === n[2] ? 'active' : '') + '">' + n[1] + '</a>'; }).join('');
+    var NIC = { home: 'home', programs: 'book', trainers: 'users', articles: 'news', about: 'shield', help: 'help' };
+    var navHTML = nav.map(function (n, i) { return '<a href="' + n[0] + '" class="' + (active === n[2] ? 'active' : '') + '" style="--i:' + i + '"><span class="nav-ic">' + icon(NIC[n[2]], 18) + '</span><span>' + n[1] + '</span></a>'; }).join('');
     var actions = u ? '<a href="#/dashboard" class="btn btn-primary btn-sm">' + icon('grid', 16) + ' Dashboard</a>'
       : '<a href="#/login" class="btn btn-ghost btn-sm">Masuk</a>' + (s.allowRegistration !== false ? '<a href="#/register" class="btn btn-primary btn-sm">Daftar</a>' : '');
     var ann = DB.all('announcements').filter(function (a) { return a.visible; })[0];
     return (ann ? '<div class="announce">' + icon('bell', 14) + ' <b>' + esc(ann.title) + '</b> <span>' + esc(ann.body) + '</span></div>' : '') +
       '<header class="topbar"><div class="container topbar-in">' + logoHTML(s) +
-      '<nav class="mainnav" id="mainnav" aria-label="Navigasi utama">' + navHTML + '<div class="nav-actions-m">' + actions + '</div></nav>' +
+      '<nav class="mainnav" id="mainnav" aria-label="Navigasi utama">' + navHTML + '<div class="nav-actions-m" style="--i:' + nav.length + '">' + actions + '</div></nav>' +
       '<div class="nav-actions">' + actions + '</div>' +
-      '<button class="icon-btn burger" id="burger" aria-label="Buka menu" aria-expanded="false">' + icon('menu', 22) + '</button></div></header>' +
-      '<main id="main">' + content + '</main>' + footer();
+      '<button class="icon-btn burger" id="burger" aria-label="Buka menu" aria-expanded="false" aria-controls="mainnav"><span></span><span></span><span></span></button></div></header>' +
+      '<div class="nav-scrim" id="navscrim"></div>' +
+      '<main id="main">' + content + '</main>' + footer() + publicTabbar(active, u);
+  }
+  /* ---------- Bottom tab bar (mobile) ---------- */
+  function tabItem(href, label, ic, on) {
+    return '<a href="' + href + '" class="tb-item' + (on ? ' on' : '') + '"' + (on ? ' aria-current="page"' : '') + '><span class="tb-ic">' + icon(ic, 21) + '</span><span class="tb-l">' + esc(label) + '</span></a>';
+  }
+  function publicTabbar(active, u) {
+    return '<nav class="tabbar" aria-label="Navigasi cepat">' +
+      tabItem('#/', 'Beranda', 'home', active === 'home') +
+      tabItem('#/programs', 'Program', 'book', active === 'programs') +
+      tabItem('#/articles', 'Artikel', 'news', active === 'articles') +
+      (u ? tabItem('#/dashboard', 'Dashboard', 'grid', false) : tabItem('#/login', 'Masuk', 'user', false)) +
+      '<button type="button" class="tb-item" id="tb-menu" aria-controls="mainnav"><span class="tb-ic">' + icon('menu', 21) + '</span><span class="tb-l">Menu</span></button></nav>';
+  }
+  var SHORT = { 'Dashboard': 'Beranda', 'Executive Dashboard': 'Beranda', 'Kelas Saya': 'Kelas', 'Kuis & Tugas': 'Kuis', 'Hasil Belajar': 'Hasil', 'Sertifikat Saya': 'Sertifikat',
+    'Jelajahi Program': 'Program', 'Materi, Kuis & Assessment': 'Materi', 'Penilaian Tugas': 'Nilai', 'Progres Peserta': 'Peserta', 'Jadwal Mengajar': 'Jadwal',
+    'Kelas & Jadwal': 'Kelas', 'Peserta & Progres': 'Peserta', 'Pengguna & Role': 'Pengguna', 'Program & Kategori': 'Program', 'Laporan Kinerja': 'Laporan', 'Laporan': 'Laporan' };
+  function appTabbar(u, cur) {
+    var items = (MENUS[u.role] || []).slice(0, 4);
+    var extra = [['#/notifications', 'Notifikasi', 'bell'], ['#/profile', 'Profil', 'user']];
+    while (items.length < 4 && extra.length) items.push(extra.shift());
+    return '<nav class="tabbar" aria-label="Navigasi cepat">' + items.map(function (m) {
+      var on = cur === m[0] || (m[0] !== '#/dashboard' && cur.indexOf(m[0]) === 0);
+      return tabItem(m[0], SHORT[m[1]] || m[1].split(' ')[0], m[2], on);
+    }).join('') + '<button type="button" class="tb-item" id="tb-side"><span class="tb-ic">' + icon('menu', 21) + '</span><span class="tb-l">Menu</span></button></nav>';
   }
   function footer() {
     var s = DB.settings();
@@ -334,15 +360,51 @@
       '<div class="app-main"><header class="app-top"><button class="icon-btn burger-app" id="burger-app" aria-label="Buka menu">' + icon('menu', 22) + '</button>' +
       '<div class="app-title"><h1>' + esc(opts.title || '') + '</h1>' + (opts.subtitle ? '<p>' + esc(opts.subtitle) + '</p>' : '') + '</div>' +
       '<div class="app-top-r"><a href="#/notifications" class="icon-btn notif" aria-label="Notifikasi">' + icon('bell', 20) + (unread ? '<i>' + unread + '</i>' : '') + '</a>' +
-      '<a href="#/profile" class="me">' + avatar(u, 34) + '<span><b>' + esc(u.name) + '</b><small>' + esc(ROLES[u.role]) + '</small></span></a></div></header>' +
+      '<a href="#/profile" class="me">' + avatar(u, 38) + '<span class="me-name"><b>' + esc(u.name) + '</b><small>' + esc(ROLES[u.role]) + '</small></span></a></div></header>' +
       '<main class="app-content" id="main">' + (opts.actions ? '<div class="page-actions">' + opts.actions + '</div>' : '') + content + '</main></div>' +
-      '<div class="side-overlay" id="side-overlay"></div></div>';
+      '<div class="side-overlay" id="side-overlay"></div>' + appTabbar(u, cur) + '</div>';
+  }
+
+
+  /* ---------- Animasi: page enter, reveal saat scroll, hitung angka ---------- */
+  var REVEAL = '.sec-head, .cards > *, .stats > *, .faq > details, .grid2 > *, .grid3 > *, .grid-21 > *, .detail-grid > *, ' +
+    '.app-content > .card, .app-content > .tabs, .app-content > .notice, .app-content > .filters, .welcome, .cta, .footer-grid > *, .auth-box, .cert, .classroom > *, .curriculum > .mod, .objectives > li';
+  function reduceMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function countUp(el) {
+    if (el.dataset.counted) return; el.dataset.counted = '1';
+    var m = /^(\d+)(%|\+)?$/.exec((el.textContent || '').trim()); if (!m) return;
+    var end = Number(m[1]), suf = m[2] || '', t0 = null, dur = 900;
+    if (end < 2) return;
+    function step(t) {
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(end * e) + suf;
+      if (k < 1) requestAnimationFrame(step);
+    }
+    el.textContent = '0' + suf; requestAnimationFrame(step);
+  }
+  function animate(root, fresh) {
+    if (!fresh || reduceMotion()) return;
+    var main = root.querySelector('#main'); if (main) main.classList.add('page-enter');
+    var els = $$(REVEAL, root).filter(function (el) { return !el.closest('.modal'); });
+    els.forEach(function (el) {
+      var idx = Array.prototype.indexOf.call(el.parentNode.children, el);
+      el.style.setProperty('--d', Math.min(idx, 8));
+      el.classList.add('rv');
+    });
+    var show = function (el) { el.classList.add('in'); $$('.stat-v, .hero-stats b', el).forEach(countUp); };
+    if (!('IntersectionObserver' in window)) { els.forEach(show); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { show(en.target); io.unobserve(en.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    els.forEach(function (el) { io.observe(el); });
+    $$('.hero-stats b', root).forEach(function (b) { setTimeout(function () { countUp(b); }, 500); });
   }
 
   window.UI = {
     $: $, $$: $$, esc: esc, safeUrl: safeUrl, fmtDate: fmtDate, toLocalInput: toLocalInput, md: md, icon: icon, toast: toast, modal: modal, closeModal: closeModal,
     confirm: confirmBox, formModal: formModal, fieldHTML: fieldHTML, readForm: readForm, readImage: readImage, storeFile: storeFile, openStoredFile: openStoredFile,
     badge: badge, statusBadge: statusBadge, progressBar: progressBar, avatar: avatar, empty: empty, stat: stat, logoHTML: logoHTML, programThumb: programThumb,
-    barChart: barChart, lineChart: lineChart, publicLayout: publicLayout, appLayout: appLayout, initials: initials, MENUS: MENUS
+    barChart: barChart, lineChart: lineChart, animate: animate, publicLayout: publicLayout, appLayout: appLayout, initials: initials, MENUS: MENUS
   };
 })();
