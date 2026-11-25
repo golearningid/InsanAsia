@@ -16,6 +16,6 @@
    JANGAN PERNAH mengisi "secret" / "service_role" key di sini.
    ========================================================= */
 window.LMS_CONFIG = {
-  supabaseUrl: '',
-  supabaseKey: ''
+  supabaseUrl: 'https://iifwrkylanfkqqimrtuw.supabase.co',
+  supabaseKey: 'sb_publishable_IE-vLSmY5VTQCUCzSuWy7Q_YjX15iZC'
 };
