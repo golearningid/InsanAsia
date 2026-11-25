@@ -1,0 +1,233 @@
+/* =========================================================
+   InsanAsia LMS – Animasi & Micro-interaction
+   (dimuat setelah style.css; dikendalikan oleh js/animations.js)
+   ========================================================= */
+:root {
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+@property --v { syntax: '<number>'; inherits: true; initial-value: 0; }
+
+/* ---------- Bar progres scroll (atas halaman) ---------- */
+#scroll-progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 100%; z-index: 300;
+  background: linear-gradient(90deg, var(--p-400), var(--p), #C4B5FD);
+  transform-origin: 0 50%; transform: scaleX(0); pointer-events: none;
+}
+
+/* ---------- Transisi pindah halaman ---------- */
+#app > .page-enter { animation: pageFade .45s var(--ease-out); }
+.page-enter .app-content,
+.page-enter .auth-box { animation: pageRise .55s var(--ease-out) both; }
+@keyframes pageFade { from { opacity: 0; } }
+@keyframes pageRise { from { opacity: 0; translate: 0 18px; } }
+
+/* ---------- Scroll reveal ---------- */
+.rv { opacity: 0; translate: 0 28px; transition: opacity .7s var(--ease-out), translate .7s var(--ease-out); transition-delay: var(--d, 0ms); }
+.rv.rv-left { translate: -32px 0; }
+.rv.rv-right { translate: 32px 0; }
+.rv.rv-zoom { translate: 0 0; scale: .94; transition-property: opacity, scale; }
+.rv.in { opacity: 1; translate: 0 0; scale: 1; }
+
+/* ---------- Hero ---------- */
+.hero::before, .hero::after {
+  content: ''; position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; z-index: 0;
+}
+.hero::before { width: 420px; height: 420px; background: rgba(139, 92, 246, .35); top: -120px; right: 8%; animation: blobA 14s ease-in-out infinite alternate; }
+.hero::after { width: 340px; height: 340px; background: rgba(109, 40, 217, .28); bottom: -140px; left: -60px; animation: blobB 18s ease-in-out infinite alternate; }
+.hero > .container { position: relative; z-index: 1; }
+@keyframes blobA { to { transform: translate(-120px, 80px) scale(1.15); } }
+@keyframes blobB { to { transform: translate(160px, -60px) scale(1.2); } }
+
+.hero-in > div:first-child > * { animation: heroUp .8s var(--ease-out) both; }
+.hero-in > div:first-child > :nth-child(1) { animation-delay: .05s; }
+.hero-in > div:first-child > :nth-child(2) { animation-delay: .15s; }
+.hero-in > div:first-child > :nth-child(3) { animation-delay: .25s; }
+.hero-in > div:first-child > :nth-child(4) { animation-delay: .35s; }
+.hero-in > div:first-child > :nth-child(5) { animation-delay: .45s; }
+.hero-in > div:last-child { animation: heroIn 1s .3s var(--ease-out) both; }
+@keyframes heroUp { from { opacity: 0; translate: 0 26px; } }
+@keyframes heroIn { from { opacity: 0; translate: 40px 0; scale: .96; } }
+
+.hero h1 {
+  background: linear-gradient(90deg, #fff 0%, #fff 40%, #C4B5FD 50%, #fff 60%, #fff 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: heroUp .8s .15s var(--ease-out) both, shimmer 6s 1.2s linear infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+
+.hero-card { animation: floatY 6s 1.3s ease-in-out infinite; }
+.hero-card .hc-row { animation: rowIn .6s var(--ease-out) both; transition: transform .25s var(--ease-out), box-shadow .25s; }
+.hero-card .hc-row:nth-child(1) { animation-delay: .55s; }
+.hero-card .hc-row:nth-child(2) { animation-delay: .7s; }
+.hero-card .hc-row:nth-child(3) { animation-delay: .85s; }
+.hero-card .hc-row:hover { transform: translateX(6px); box-shadow: 0 10px 30px rgba(109, 40, 217, .35); }
+.hero-card .hc-ic { animation: pulseRing 2.8s 1.5s ease-out infinite; }
+@keyframes rowIn { from { opacity: 0; translate: 30px 0; } }
+@keyframes floatY { 50% { transform: translateY(-10px); } }
+@keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, .45); } 70%, 100% { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); } }
+.hero-img { animation: floatY 7s 1.3s ease-in-out infinite; }
+
+.page-hero h1, .page-hero p, .page-hero .crumbs { animation: heroUp .7s var(--ease-out) both; }
+.page-hero h1 { animation-delay: .08s; }
+.page-hero p { animation-delay: .18s; }
+
+/* ---------- Logo ---------- */
+.logo-mark { background-size: 200% 200%; animation: gradShift 6s ease-in-out infinite; transition: transform .4s var(--ease-spring); }
+.logo:hover .logo-mark { transform: rotate(-8deg) scale(1.08); }
+@keyframes gradShift { 50% { background-position: 100% 100%; } }
+
+/* ---------- Topbar ---------- */
+.topbar { transition: box-shadow .3s, background .3s; }
+.topbar.scrolled { box-shadow: 0 8px 30px rgba(17, 12, 34, .08); background: rgba(255, 255, 255, .97); }
+.app-top { transition: box-shadow .3s; }
+.app-top.scrolled { box-shadow: 0 8px 24px rgba(17, 12, 34, .06); }
+.mainnav a { position: relative; transition: color .2s, background .2s; }
+.mainnav a::after {
+  content: ''; position: absolute; left: .75rem; right: .75rem; bottom: .3rem; height: 2px; border-radius: 2px;
+  background: var(--p); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s var(--ease-out);
+}
+.mainnav a:hover::after, .mainnav a.active::after { transform: scaleX(1); }
+.mainnav a:hover { text-decoration: none; }
+
+/* ---------- Tombol ---------- */
+.btn { position: relative; overflow: hidden; isolation: isolate; transition: background .2s, color .2s, border-color .2s, transform .2s var(--ease-out), box-shadow .2s; }
+.btn:not(:disabled):hover { transform: translateY(-2px); }
+.btn:not(:disabled):active { transform: translateY(0) scale(.97); }
+.btn-primary:not(:disabled):hover { box-shadow: 0 10px 24px rgba(109, 40, 217, .35); }
+.btn-dark:not(:disabled):hover { box-shadow: 0 10px 24px rgba(11, 10, 16, .3); }
+.btn-primary::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .7s var(--ease-out);
+}
+.btn-primary:hover::before { transform: translateX(120%); }
+.btn .ic { transition: transform .25s var(--ease-out); }
+.btn:hover .ic:last-child:not(:first-child) { transform: translateX(4px); }
+.ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: .25; transform: scale(0); animation: ripple .6s ease-out forwards; pointer-events: none; z-index: -1; }
+@keyframes ripple { to { transform: scale(1); opacity: 0; } }
+.icon-btn { transition: background .2s, color .2s, transform .2s var(--ease-spring); }
+.icon-btn:hover { transform: scale(1.08); }
+.notif i { animation: badgePop .5s .4s var(--ease-spring) both, badgePulse 2.4s 1.2s ease-out infinite; }
+@keyframes badgePop { from { transform: scale(0); } }
+@keyframes badgePulse { 0% { box-shadow: 0 0 0 0 rgba(109, 40, 217, .5); } 70%, 100% { box-shadow: 0 0 0 8px rgba(109, 40, 217, 0); } }
+
+/* ---------- Kartu ---------- */
+.card.hover, .pcard, .stat { transition: transform .3s var(--ease-out), box-shadow .3s, border-color .3s; }
+.card.hover:hover, .pcard:hover { transform: translateY(-6px); box-shadow: 0 2px 4px rgba(17, 12, 34, .04), 0 20px 40px rgba(109, 40, 217, .14); }
+.stat:hover { transform: translateY(-4px); border-color: var(--p-100); box-shadow: 0 16px 30px rgba(109, 40, 217, .1); }
+.stat-ic, .cat-ic, .li-ic { transition: transform .35s var(--ease-spring), background .25s, color .25s; }
+.stat:hover .stat-ic, .card:hover .cat-ic, .list-item:hover .li-ic { transform: scale(1.12) rotate(-6deg); }
+.pcard { isolation: isolate; }
+.pcard .thumb { transition: transform .6s var(--ease-out); }
+.pcard:hover .thumb { transform: scale(1.06); }
+.pcard .pc-body { position: relative; background: #fff; z-index: 1; }
+.quote { transition: transform .3s var(--ease-out), box-shadow .3s; }
+.quote:hover { transform: translateY(-4px) rotate(-.4deg); }
+
+/* Kartu sambutan dashboard */
+.welcome { background-size: 180% 180%; animation: gradShift 10s ease-in-out infinite; position: relative; overflow: hidden; }
+.welcome::after {
+  content: ''; position: absolute; width: 260px; height: 260px; right: -80px; top: -120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 181, 253, .35), transparent 70%); animation: blobA 12s ease-in-out infinite alternate; pointer-events: none;
+}
+.welcome > * { position: relative; z-index: 1; }
+
+/* CTA */
+.cta { background-size: 200% 200%; animation: gradShift 9s ease-in-out infinite; }
+
+/* ---------- Progress & grafik ---------- */
+.progress span, .hbar-t span { transform-origin: 0 50%; }
+.anim-bars .progress span, .anim-bars .hbar-t span { animation: growX 1.1s var(--ease-out) both; animation-delay: var(--d, 0ms); }
+@keyframes growX { from { transform: scaleX(0); } }
+.hbar-t span { transition: background .2s; }
+.score-ring { animation: ringFill 1.4s .2s var(--ease-out) both, ringPop .6s var(--ease-spring) both; }
+@keyframes ringFill { from { --v: 0; } }
+@keyframes ringPop { from { transform: scale(.7); opacity: 0; } }
+.linechart .ln { transition: stroke-dashoffset 1.6s var(--ease-out); }
+.linechart .dot { transition: r .2s; }
+.linechart.drawn .dot { animation: dotPop .4s var(--ease-spring) both; animation-delay: var(--d, 0ms); transform-box: fill-box; transform-origin: center; }
+@keyframes dotPop { from { transform: scale(0); } }
+
+/* ---------- Sidebar ---------- */
+.side-nav a, .side-foot a { transition: background .2s, color .2s, padding .25s var(--ease-out); }
+.side-nav a:hover, .side-foot a:hover { padding-left: 1.1rem; }
+.side-nav a.active { box-shadow: 0 8px 20px rgba(109, 40, 217, .4); }
+.page-enter .side-nav a { animation: sideIn .45s var(--ease-out) both; }
+@keyframes sideIn { from { opacity: 0; translate: -14px 0; } }
+
+/* ---------- List, tabel, tab ---------- */
+.list-item { transition: background .2s, padding .25s var(--ease-out); }
+tbody tr { transition: background .2s; }
+.anim-rows tbody tr { animation: rowFade .45s var(--ease-out) both; animation-delay: var(--d, 0ms); }
+@keyframes rowFade { from { opacity: 0; translate: 0 8px; } }
+.tab { position: relative; transition: color .2s; }
+.tab.on { animation: tabOn .35s var(--ease-out); }
+@keyframes tabOn { from { border-color: transparent; } }
+.chip { transition: all .2s var(--ease-out); position: relative; overflow: hidden; isolation: isolate; }
+.chip:active { transform: scale(.94); }
+.chip.on { animation: chipPop .35s var(--ease-spring); }
+@keyframes chipPop { 50% { transform: scale(1.08); } }
+
+/* ---------- FAQ ---------- */
+.faq details { transition: border-color .25s, box-shadow .25s; }
+.faq details:hover { border-color: var(--p-400); }
+.faq details[open] { border-color: var(--p-400); box-shadow: 0 10px 24px rgba(109, 40, 217, .08); }
+.faq summary::after { transition: transform .3s var(--ease-out); }
+.faq details[open] summary::after { transform: rotate(180deg); }
+.faq details[open] > :not(summary) { animation: faqOpen .4s var(--ease-out); }
+@keyframes faqOpen { from { opacity: 0; translate: 0 -8px; } }
+
+/* ---------- Kuis & kelas ---------- */
+.opt { transition: border-color .2s, background .2s, transform .2s var(--ease-out); }
+.opt:hover { transform: translateX(4px); }
+.opt:has(input:checked) { animation: chipPop .3s var(--ease-spring); }
+.opt.correct, .opt.wrong { animation: rowFade .4s var(--ease-out); }
+.syllabus a { transition: background .2s, padding .25s var(--ease-out); }
+.syllabus a:hover { padding-left: 1.3rem; }
+.syllabus .tick.done { animation: badgePop .45s var(--ease-spring); }
+.viewer { animation: pageRise .5s var(--ease-out); }
+
+/* ---------- Form ---------- */
+.field.invalid input, .field.invalid select, .field.invalid textarea { animation: shake .4s; }
+@keyframes shake { 20%, 60% { translate: -6px 0; } 40%, 80% { translate: 6px 0; } }
+.demo-list button { transition: border-color .2s, transform .2s var(--ease-out), box-shadow .2s; }
+.demo-list button:hover { transform: translateX(4px); box-shadow: 0 6px 14px rgba(109, 40, 217, .12); }
+.auth-side h2, .auth-side p { animation: heroUp .8s .1s var(--ease-out) both; }
+
+/* ---------- Modal & toast ---------- */
+.modal-wrap { animation: fade .25s ease-out; backdrop-filter: blur(3px); }
+.modal { animation: modalIn .4s var(--ease-spring); }
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(.95); } }
+.toast { animation: toastIn .5s var(--ease-spring); position: relative; overflow: hidden; }
+.toast::after { content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: rgba(255, 255, 255, .35); transform-origin: 0 50%; animation: toastTimer 3.2s linear forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(110%); } }
+@keyframes toastTimer { to { transform: scaleX(0); } }
+
+/* ---------- Sertifikat ---------- */
+.cert { animation: certIn .9s var(--ease-out) both; }
+.cert .c-name { position: relative; }
+.cert .c-name::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: var(--p); transform: scaleX(0); animation: growX2 1s .7s var(--ease-out) forwards; }
+@keyframes certIn { from { opacity: 0; transform: perspective(900px) rotateX(10deg) translateY(30px); } }
+@keyframes growX2 { to { transform: scaleX(1); } }
+
+/* ---------- Tombol kembali ke atas ---------- */
+#to-top {
+  position: fixed; right: 1.2rem; bottom: 1.2rem; z-index: 90; width: 46px; height: 46px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--p); color: #fff; display: grid; place-items: center; box-shadow: 0 10px 24px rgba(109, 40, 217, .4);
+  opacity: 0; transform: translateY(20px) scale(.8); pointer-events: none; transition: opacity .3s, transform .35s var(--ease-spring), background .2s;
+}
+#to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+#to-top.show:hover { background: var(--p-600); transform: translateY(-3px); }
+body:has(#toasts .toast) #to-top { bottom: 5rem; }
+
+/* ---------- Aksesibilitas & cetak ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .rv { opacity: 1; translate: none; scale: none; }
+}
+@media print {
+  .rv { opacity: 1 !important; translate: none !important; scale: none !important; }
+  #scroll-progress, #to-top { display: none !important; }
+  .cert { animation: none; }
+}
