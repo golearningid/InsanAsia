@@ -287,6 +287,12 @@
         '<div class="grow"><p class="muted" style="font-size:.86rem">Format PNG, JPG, SVG, atau WEBP. Maks. 5 MB. Gambar akan diperkecil otomatis (maks. lebar 400px). Logo tampil di header, sidebar, footer, sertifikat, dan ikon tab.</p>' +
         '<label class="btn btn-primary btn-sm" for="logoin">' + icon('upload', 14) + ' Unggah Logo</label><input type="file" id="logoin" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="sr">' + (s.logo ? ' <button class="btn btn-ghost btn-sm" id="rmlogo">Hapus logo</button>' : '') + '</div></div>' +
         '<h4 class="mt2">Pratinjau header</h4><div class="card flat" style="padding:.8rem 1rem">' + UI.logoHTML(s) + '</div><div class="card flat mt" style="padding:.8rem 1rem;background:var(--ink)">' + UI.logoHTML(s, true) + '</div></div></div>';
+    } else if (tab === 'system' && DB.online) {
+      body = '<div class="grid2" style="align-items:start"><div class="card"><h3>Pendaftaran Peserta</h3><label class="row" style="gap:.5rem"><input type="checkbox" id="allowreg"' + (s.allowRegistration !== false ? ' checked' : '') + '> Izinkan pengunjung membuat akun peserta sendiri</label>' +
+        '<h3 class="mt2">Cadangan Data</h3><p class="muted" style="font-size:.9rem">Unduh salinan seluruh data (tanpa file PDF) sebagai arsip.</p><button class="btn btn-ghost" id="exp">' + icon('download', 16) + ' Ekspor backup (.json)</button></div>' +
+        '<div class="card"><h3>Status Database</h3><div class="notice" style="border-color:var(--green);background:var(--green-bg)">' + icon('check', 16) + ' <b>Terhubung ke database online (Supabase).</b> Setiap perubahan yang Anda simpan langsung tampil untuk semua pengunjung.</div>' +
+        '<dl class="kv mt"><dt>Pengguna</dt><dd>' + DB.all('users').length + '</dd><dt>Program</dt><dd>' + DB.all('programs').length + '</dd><dt>Pendaftaran</dt><dd>' + DB.all('enrollments').length + '</dd></dl>' +
+        '<p class="muted mt" style="font-size:.85rem">Backup otomatis harian tersedia di dashboard Supabase (menu Database › Backups) sesuai paket Anda.</p></div></div>';
     } else if (tab === 'system') {
       body = '<div class="grid2" style="align-items:start"><div class="card"><h3>Pendaftaran Peserta</h3><label class="row" style="gap:.5rem"><input type="checkbox" id="allowreg"' + (s.allowRegistration !== false ? ' checked' : '') + '> Izinkan pengunjung membuat akun peserta sendiri</label>' +
         '<h3 class="mt2">Publikasikan Perubahan ke Semua Pengunjung</h3><p class="muted" style="font-size:.9rem">Prototype ini menyimpan data di browser. Agar perubahan Anda (pengaturan, program, materi, PDF) tampil di perangkat lain saat website di-hosting, unduh file <code>site-data.js</code> lalu ganti file dengan nama yang sama di folder <code>js/</code> project, kemudian unggah ulang ke hosting.</p>' +
@@ -297,7 +303,7 @@
     } else {
       body = '<div class="card" style="max-width:860px"><form id="sf" class="form-grid" novalidate>' + F[tab].map(UI.fieldHTML).join('') + '<div class="field full"><button class="btn btn-primary">' + icon('check', 16) + ' Simpan Perubahan</button></div></form></div>';
     }
-    var html = '<div class="notice">' + icon('lock', 16) + ' Halaman ini hanya dapat diakses oleh <b>Administrator System</b>. Perubahan langsung diterapkan ke seluruh tampilan website tanpa mengubah kode.</div>' +
+    var html = '<div class="notice">' + icon('lock', 16) + ' Halaman ini hanya dapat diakses oleh <b>Administrator System</b>. Perubahan langsung diterapkan ke seluruh tampilan website tanpa mengubah kode' + (DB.online ? ' dan langsung terlihat oleh semua pengunjung.' : '.') + '</div>' +
       '<div class="tabs">' + tabs.map(function (t) { return '<a class="tab ' + (tab === t[0] ? 'on' : '') + '" href="#/admin/settings?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>' + body;
     App.render(UI.appLayout(html, { title: 'Pengaturan Website', subtitle: 'Identitas, logo, kontak, profil, dan konfigurasi' }));
 
@@ -325,10 +331,11 @@
     var rl = UI.$('#rmlogo'); if (rl) rl.onclick = function () { DB.setSettings({ logo: null }); UI.toast('Logo dihapus.'); App.refresh(); };
 
     if (tab === 'system') {
-      try { UI.$('#lsz').textContent = (new Blob([localStorage.getItem('insanasia_lms_v3') || '']).size / 1024).toFixed(0) + ' KB (batas ±5 MB)'; } catch (e) { }
-      DB.Files.all().then(function (all) { var n = Object.keys(all).length, sz = Object.keys(all).reduce(function (s, k) { return s + (all[k].size || 0); }, 0); UI.$('#fsz').textContent = n + ' file • ' + (sz / 1048576).toFixed(2) + ' MB'; }).catch(function () { UI.$('#fsz').textContent = '-'; });
+      if (!DB.online) try { UI.$('#lsz').textContent = (new Blob([localStorage.getItem('insanasia_lms_v3') || '']).size / 1024).toFixed(0) + ' KB (batas ±5 MB)'; } catch (e) { }
+      if (!DB.online) DB.Files.all().then(function (all) { var n = Object.keys(all).length, sz = Object.keys(all).reduce(function (s, k) { return s + (all[k].size || 0); }, 0); UI.$('#fsz').textContent = n + ' file • ' + (sz / 1048576).toFixed(2) + ' MB'; }).catch(function () { UI.$('#fsz').textContent = '-'; });
       UI.$('#allowreg').onchange = function (e) { DB.setSettings({ allowRegistration: e.target.checked }); DB.log((e.target.checked ? 'Membuka' : 'Menutup') + ' pendaftaran peserta', 'settings'); UI.toast(e.target.checked ? 'Pendaftaran dibuka.' : 'Pendaftaran ditutup.'); };
       UI.$('#exp').onclick = function () { exportData(false); };
+      if (DB.online) return;
       UI.$('#pub').onclick = function () { exportData(true); };
       UI.$('#imp').onchange = function (e) {
         var f = e.target.files[0]; if (!f) return;

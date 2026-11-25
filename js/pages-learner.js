@@ -364,11 +364,12 @@
     };
     UI.$('#pw').onsubmit = function (e) {
       e.preventDefault(); var f = e.target;
-      if (DB.hashPass(f.old.value) !== u.passHash) return UI.toast('Kata sandi saat ini salah.', 'error');
       if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(f.new1.value)) return UI.toast('Kata sandi baru minimal 8 karakter dengan huruf dan angka.', 'error');
       if (f.new1.value !== f.new2.value) return UI.toast('Konfirmasi kata sandi tidak sama.', 'error');
-      DB.update('users', u.id, { passHash: DB.hashPass(f.new1.value) }); DB.log('Mengubah kata sandi', 'auth');
-      f.reset(); UI.toast('Kata sandi diperbarui.');
+      Auth.changePassword(f.old.value, f.new1.value).then(function (r) {
+        if (!r.ok) return UI.toast(r.msg, 'error');
+        DB.log('Mengubah kata sandi', 'auth'); f.reset(); UI.toast('Kata sandi diperbarui.');
+      });
     };
   };
 

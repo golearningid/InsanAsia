@@ -9,7 +9,7 @@
 
   function pubPrograms() { return DB.where('programs', function (p) { return p.status === 'published'; }); }
   function openClasses(pid) { return DB.where('classes', function (k) { return k.programId === pid && (k.status === 'published' || k.status === 'ongoing'); }); }
-  function enrolledCount(kid) { return DB.where('enrollments', function (e) { return e.classId === kid; }).length; }
+  function enrolledCount(kid) { return DB.classCount(kid); }
   function catIcon(slug) { return { copywriting: 'edit', 'digital-marketing': 'activity', 'business-development': 'chart', 'personal-skills': 'user' }[slug] || 'book'; }
 
   function programCard(p) {
@@ -28,8 +28,8 @@
     var progs = pubPrograms();
     var featured = progs.filter(function (p) { return p.featured; }).slice(0, 3);
     if (!featured.length) featured = progs.slice(0, 3);
-    var learners = DB.where('users', function (u) { return u.role === 'learner'; }).length;
-    var certs = DB.all('certificates').length;
+    var learners = DB.countLearners();
+    var certs = DB.countCertificates();
     var cats = DB.all('categories');
     var testi = DB.where('testimonials', function (t) { return t.visible; });
     var arts = DB.where('articles', function (a) { return a.status === 'published'; }).slice(-3).reverse();
@@ -173,6 +173,7 @@
       footer: '<button class="btn btn-ghost" data-close>Batal</button><button class="btn btn-primary" id="do-enroll">Konfirmasi Daftar</button>',
       onOpen: function (w) {
         w.querySelector('#do-enroll').onclick = function () {
+          DB.bumpClass(kid);
           DB.insert('enrollments', { userId: u.id, classId: kid, programId: pid, status: 'active', enrolledAt: new Date().toISOString(), rating: null, review: '' });
           DB.notify(u.id, 'Pendaftaran berhasil: ' + p.title + ' (' + k.name + ').', '#/learn/' + pid);
           if (k.trainerId) DB.notify(k.trainerId, u.name + ' mendaftar di kelas ' + p.title + '.', '#/manage/learners');
@@ -256,7 +257,17 @@
   Pages.verify = function (params, q) {
     var code = (q.code || '').trim();
     var res = '';
-    if (code) {
+    if (code && DB.online && !q._r) {
+      App.render(UI.publicLayout(pageHero('Verifikasi Sertifikat', 'Memeriksa kode…') + '<section class="section"><div class="container"><p class="muted">Memeriksa…</p></div></section>', ''));
+      DB.verify(code).then(function (r) { Pages._verifyRes = r || false; Pages.verify(params, Object.assign({}, q, { _r: 1 })); })
+        .catch(function (e) { UI.toast(e.message, 'error'); Pages._verifyRes = false; Pages.verify(params, Object.assign({}, q, { _r: 1 })); });
+      return;
+    }
+    if (code && DB.online) {
+      var vr = Pages._verifyRes;
+      res = vr ? '<div class="card mt" style="border-color:var(--green)"><div class="row">' + UI.badge('✓ Sertifikat Valid', 'green') + '</div><dl class="kv mt"><dt>Nama</dt><dd>' + esc(vr.name || '-') + '</dd><dt>Program</dt><dd>' + esc(vr.program || '-') + '</dd><dt>Nomor</dt><dd>' + esc(vr.number) + '</dd><dt>Kode</dt><dd>' + esc(vr.code) + '</dd><dt>Diterbitkan</dt><dd>' + UI.fmtDate(vr.issuedAt) + '</dd></dl></div>'
+        : '<div class="card mt" style="border-color:var(--red)">' + UI.badge('Tidak ditemukan', 'red') + '<p class="mt" style="margin-bottom:0">Kode "' + esc(code) + '" tidak terdaftar. Periksa kembali penulisan kode.</p></div>';
+    } else if (code) {
       var c = DB.all('certificates').find(function (x) { return x.code.toUpperCase() === code.toUpperCase() || x.number.toUpperCase() === code.toUpperCase(); });
       if (c) {
         var u = DB.find('users', c.userId), p = DB.find('programs', c.programId);
@@ -275,6 +286,21 @@
     App.render(UI.publicLayout(pageHero(kind === 'privacy' ? 'Kebijakan Privasi' : 'Ketentuan Penggunaan', '') + '<section class="section"><div class="container prose">' + UI.md(kind === 'privacy' ? privacy : terms) + '</div></section>', ''));
   };
 
+  /* ---------- Setup database online (sekali saja) ---------- */
+  Pages.setup = function () {
+    App.render('<div class="auth"><div class="auth-side">' + UI.logoHTML(DB.settings(), true) + '<div><h2>Database terhubung!</h2><p>Website sudah tersambung ke Supabase. Langkah terakhir: isi database dengan data awal.</p></div><small style="color:#8F88A6">Langkah ini hanya dilakukan sekali.</small></div>' +
+      '<div class="auth-form"><div class="auth-box"><h1>Isi Data Awal</h1><p class="muted">Database Anda masih kosong. Klik tombol di bawah untuk membuat 5 akun demo, program Copywriting for UMKM beserta materi, kuis, artikel, FAQ, dan pengaturan website.</p>' +
+      '<div class="notice mb">' + icon('lock', 16) + ' Setelah selesai, <b>segera ganti kata sandi akun demo</b> (terutama <b>Adm</b>) melalui menu Profil & Akun, karena kata sandi demo diketahui umum.</div>' +
+      '<button class="btn btn-primary btn-lg" id="doinit" style="width:100%">Isi Data Awal Sekarang</button><div id="ierr" class="err mt" role="alert"></div></div></div></div>');
+    UI.$('#doinit').onclick = function () {
+      var b = this; b.disabled = true; b.textContent = 'Memproses… (±10 detik)';
+      DB.initOnline().then(function () {
+        UI.toast('Database berhasil diisi. Silakan masuk dengan akun Adm.');
+        location.hash = '#/login'; App.refresh();
+      }).catch(function (e) { b.disabled = false; b.textContent = 'Coba Lagi'; UI.$('#ierr').textContent = e.message; });
+    };
+  };
+
   Pages.notFound = function () {
     App.render(UI.publicLayout('<section class="section"><div class="container center"><h1>404</h1><p class="muted">Halaman tidak ditemukan atau Anda tidak memiliki akses.</p><a href="#/" class="btn btn-primary">Kembali ke Beranda</a></div></section>', ''));
   };
@@ -285,25 +311,31 @@
     return '<div class="auth"><div class="auth-side">' + UI.logoHTML(s, true) + '<div><div class="eyebrow" style="color:#C4B5FD">' + esc(s.tagline) + '</div><h2>Belajar keterampilan praktis untuk usaha dan karier Anda.</h2><p>Materi terstruktur, latihan langsung, feedback trainer, dan e-sertifikat — semuanya dalam satu platform.</p></div><small style="color:#8F88A6">© ' + new Date().getFullYear() + ' ' + esc(s.siteName) + '</small></div>' +
       '<div class="auth-form"><div class="auth-box">' + form + '</div></div></div>';
   }
+  var DEMO = [['Learner', 'Lrn', 'Learner123'], ['Trainer Internal', 'Trn', 'Trainer123'], ['Enterprise Coach', 'Enp', 'Enterprise123'], ['Administrator System', 'Adm', 'Admin123'], ['Executive Viewer', 'Exe', 'Executive123']];
 
   Pages.login = function (params, q) {
     if (Auth.user()) return (location.hash = '#/dashboard');
     var html = authShell('<a href="#/" class="muted" style="font-size:.88rem">← Kembali ke beranda</a><h1 class="mt">Masuk ke akun Anda</h1><p class="muted">Gunakan username atau email yang terdaftar.</p>' +
-      '<form id="lf" class="form-1" novalidate>' + UI.fieldHTML({ name: 'identity', label: 'Username atau Email', required: true, placeholder: 'Masukkan username atau email' }) +
+      '<form id="lf" class="form-1" novalidate>' + UI.fieldHTML({ name: 'identity', label: 'Username atau Email', required: true, placeholder: 'contoh: Lrn' }) +
       '<div class="field" data-field="password"><label for="f_password">Kata sandi <span class="req">*</span></label><div style="position:relative"><input type="password" id="f_password" name="password" required autocomplete="current-password"><button type="button" class="icon-btn" id="togglepw" aria-label="Tampilkan kata sandi" style="position:absolute;right:2px;top:1px">' + icon('eye') + '</button></div><small class="err"></small></div>' +
       '<div class="row between"><label class="row" style="gap:.4rem;font-size:.88rem"><input type="checkbox" name="remember"> Ingat saya</label><a href="#/forgot" style="font-size:.88rem">Lupa kata sandi?</a></div>' +
       '<div id="lerr" class="err" role="alert"></div><button class="btn btn-primary btn-lg">Masuk</button></form>' +
-      (DB.settings().allowRegistration !== false ? '<p class="center mt">Belum punya akun? <a href="#/register"><b>Daftar sebagai peserta</b></a></p>' : '<p class="center mt muted" style="font-size:.88rem">Belum punya akun? Hubungi admin untuk dibuatkan akun.</p>'));
+      '<p class="center mt">Belum punya akun? <a href="#/register"><b>Daftar sebagai peserta</b></a></p>' +
+      '<div class="demo-box"><h4>' + icon('lock', 14) + ' Akun demo (klik untuk mengisi)</h4><div class="demo-list">' + DEMO.map(function (d) { return '<button type="button" data-u="' + d[1] + '" data-p="' + d[2] + '"><span>' + d[0] + '</span><code>' + d[1] + ' / ' + d[2] + '</code></button>'; }).join('') + '</div></div>');
     App.render(html);
     var f = UI.$('#lf');
     UI.$('#togglepw').onclick = function () { var i = UI.$('#f_password'); i.type = i.type === 'password' ? 'text' : 'password'; };
+    UI.$$('.demo-list button').forEach(function (b) { b.onclick = function () { f.identity.value = b.dataset.u; f.password.value = b.dataset.p; f.identity.focus(); }; });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!f.identity.value.trim() || !f.password.value) { UI.$('#lerr').textContent = 'Username dan kata sandi wajib diisi.'; return; }
-      var r = Auth.login(f.identity.value, f.password.value, f.remember.checked);
-      if (!r.ok) { UI.$('#lerr').textContent = r.msg; return; }
-      UI.toast('Selamat datang, ' + r.user.name + '!');
-      location.hash = q.next ? decodeURIComponent(q.next) : '#/dashboard';
+      var btn = f.querySelector('button.btn-primary'); btn.disabled = true; btn.textContent = 'Memproses…';
+      Auth.login(f.identity.value, f.password.value, f.remember.checked).then(function (r) {
+        btn.disabled = false; btn.textContent = 'Masuk';
+        if (!r.ok) { UI.$('#lerr').textContent = r.msg; return; }
+        UI.toast('Selamat datang, ' + r.user.name + '!');
+        location.hash = q.next ? decodeURIComponent(q.next) : '#/dashboard';
+      });
     });
   };
 
@@ -340,14 +372,21 @@
       UI.$$('.field', f).forEach(function (b) { b.classList.remove('invalid'); var x = b.querySelector('.err'); if (x) x.textContent = ''; });
       Object.keys(errs).forEach(function (k) { var b = f.querySelector('[data-field="' + k + '"]'); if (b) { b.classList.add('invalid'); var x = b.querySelector('.err'); if (x) x.textContent = errs[k]; else UI.$('#rerr').textContent = errs[k]; } });
       if (Object.keys(errs).length) return;
-      var r = Auth.register(v);
-      if (!r.ok) { UI.$('#rerr').textContent = r.msg; return; }
-      UI.toast('Akun berhasil dibuat. Selamat datang!');
-      location.hash = '#/dashboard';
+      var btn = f.querySelector('button.btn-primary'); btn.disabled = true; btn.textContent = 'Memproses…';
+      Auth.register(v).then(function (r) {
+        btn.disabled = false; btn.textContent = 'Daftar Sekarang';
+        if (!r.ok) { UI.$('#rerr').textContent = r.msg; return; }
+        UI.toast('Akun berhasil dibuat. Selamat datang!');
+        location.hash = '#/dashboard';
+      });
     });
   };
 
   Pages.forgot = function () {
+    if (DB.online) {
+      var st = DB.settings();
+      return App.render(authShell('<a href="#/login" class="muted" style="font-size:.88rem">← Kembali ke halaman masuk</a><h1 class="mt">Lupa kata sandi?</h1><p class="muted">Demi keamanan, kata sandi diatur ulang oleh Administrator.</p><div class="notice">' + icon('mail', 16) + ' Hubungi admin melalui <a href="mailto:' + esc(st.email) + '?subject=Reset%20kata%20sandi">' + esc(st.email) + '</a>' + (st.whatsapp ? ' atau <a target="_blank" rel="noopener" href="https://wa.me/' + esc(String(st.whatsapp).replace(/\D/g, '')) + '">WhatsApp</a>' : '') + ' dengan menyebutkan username dan email akun Anda. Admin dapat membuat kata sandi baru melalui menu Pengguna & Role.</div>'));
+    }
     App.render(authShell('<a href="#/login" class="muted" style="font-size:.88rem">← Kembali ke halaman masuk</a><h1 class="mt">Pulihkan kata sandi</h1><p class="muted">Masukkan email akun Anda. Kami akan mengirimkan kode pemulihan.</p>' +
       '<form id="ff" class="form-1" novalidate>' + UI.fieldHTML({ name: 'email', label: 'Email', type: 'email', required: true }) + '<div id="ferr" class="err"></div><button class="btn btn-primary">Kirim Kode</button></form><div id="step2"></div>'));
     UI.$('#ff').onsubmit = function (e) {

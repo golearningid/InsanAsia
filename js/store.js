@@ -57,6 +57,36 @@
   function daysFromNow(d, h) { var x = new Date(); x.setDate(x.getDate() + d); x.setHours(h || 9, 0, 0, 0); return x.toISOString(); }
   function monthsAgo(m, day) { var x = new Date(); x.setMonth(x.getMonth() - m); x.setDate(day || 10); return x.toISOString(); }
 
+  /* ---------- Koneksi Supabase (mode online) ---------- */
+  var CFG = window.LMS_CONFIG || {};
+  var BADKEY = /^sb_secret_/.test(CFG.supabaseKey || '') || (function () {
+    try { return JSON.parse(atob(String(CFG.supabaseKey).split('.')[1])).role === 'service_role'; } catch (e) { return false; }
+  })();
+  var ONLINE = !BADKEY && !!(CFG.supabaseUrl && CFG.supabaseKey && /^https?:\/\//.test(CFG.supabaseUrl));
+  var API = ONLINE ? CFG.supabaseUrl.replace(/\/+$/, '') : '';
+  var BUCKET = 'lms-files';
+  function apiHeaders(extra) {
+    return Object.assign({ apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey }, extra || {});
+  }
+  var Cloud = {
+    rpc: function (fn, args) {
+      return fetch(API + '/rest/v1/rpc/' + fn, { method: 'POST', headers: apiHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(args || {}) })
+        .catch(function () { throw new Error('Tidak dapat terhubung ke server database. Periksa koneksi internet.'); })
+        .then(function (r) {
+          return r.text().then(function (t) {
+            var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { }
+            if (!r.ok) {
+              var msg = (j && (j.message || j.hint)) || ('HTTP ' + r.status);
+              if (r.status === 404) msg = 'Fungsi database "' + fn + '" tidak ditemukan. Pastikan supabase-setup.sql sudah dijalankan.';
+              if (r.status === 401 || r.status === 403) msg = 'Kunci API Supabase ditolak. Periksa isi js/config.js.';
+              throw new Error(msg);
+            }
+            return j;
+          });
+        });
+    }
+  };
+
   /* ---------- IndexedDB untuk file ---------- */
   var DBNAME = 'insanasia_lms_files', STORE = 'files', _db = null;
   function openDB() {
@@ -69,7 +99,26 @@
       r.onerror = function () { rej(r.error); };
     });
   }
-  var Files = {
+  var CloudFiles = {
+    put: function (blob, id) {
+      var im = /^image\/(\w+)/.exec(blob.type || '');
+      var ext = blob.type === 'application/pdf' ? '.pdf' : im ? '.' + im[1] : '';
+      id = id || uid('file') + ext;
+      return fetch(API + '/storage/v1/object/' + BUCKET + '/' + encodeURIComponent(id), {
+        method: 'POST', headers: apiHeaders({ 'Content-Type': blob.type || 'application/octet-stream', 'x-upsert': 'false' }), body: blob
+      }).catch(function () { throw new Error('Gagal mengunggah file. Periksa koneksi internet.'); })
+        .then(function (r) {
+          if (r.ok) return id;
+          return r.text().then(function (t) { var m = ''; try { m = JSON.parse(t).message; } catch (e) { m = t; } throw new Error('Unggah file ditolak server: ' + (m || r.status)); });
+        });
+    },
+    url: function (id) { return API + '/storage/v1/object/public/' + BUCKET + '/' + encodeURIComponent(id); },
+    get: function (id) { return fetch(CloudFiles.url(id)).then(function (r) { return r.ok ? r.blob() : null; }).catch(function () { return null; }); },
+    del: function () { return Promise.resolve(); },
+    all: function () { return Promise.resolve({}); },
+    clear: function () { return Promise.resolve(); }
+  };
+  var Files = ONLINE ? CloudFiles : {
     put: function (blob, id) {
       id = id || uid('file');
       return openDB().then(function (db) {
@@ -371,7 +420,87 @@
   var SESSION = 'insanasia_lms_session';
   var data = null;
 
+  /* ===== Mode online: muat, sinkronkan, inisialisasi ===== */
+  var TOKEN = 'insanasia_lms_token';
+  var COLLS = ['users', 'categories', 'programs', 'classes', 'modules', 'lessons', 'assessments', 'enrollments', 'progress', 'attempts',
+    'submissions', 'certificates', 'articles', 'testimonials', 'faqs', 'announcements', 'notifications', 'logs', 'messages'];
+  var snap = {}, meId = null, lastLoad = 0, syncTimer = null, syncing = null, stats = {};
+  function getToken() { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); }
+  function setToken(t, remember) { clearToken(); (remember ? localStorage : sessionStorage).setItem(TOKEN, t); }
+  function clearToken() { sessionStorage.removeItem(TOKEN); localStorage.removeItem(TOKEN); }
+  function recKey(r) { return r.id || (r.userId + '|' + r.lessonId); }
+  function currentMap() {
+    var m = {};
+    COLLS.forEach(function (c) { (data[c] || []).forEach(function (r) { m[c + '\u0001' + recKey(r)] = JSON.stringify(r); }); });
+    m['settings\u0001main'] = JSON.stringify(data.settings);
+    return m;
+  }
+  function byDateDesc(a, b) { return new Date(b.date) - new Date(a.date); }
+  function loadOnline() {
+    return Cloud.rpc('lms_load', { p_token: getToken() }).then(function (res) {
+      var d = { meta: { version: 3, online: true }, resets: [] };
+      COLLS.forEach(function (c) { d[c] = []; });
+      (res.records || []).forEach(function (r) {
+        if (r.c === 'settings') d.settings = r.d;
+        else if (d[r.c]) d[r.c].push(r.d);
+      });
+      d.users = res.users || [];
+      if (!d.settings) d.settings = seed().settings;
+      ['logs', 'notifications', 'messages'].forEach(function (c) { d[c].sort(byDateDesc); });
+      stats = res.stats || {};
+      DB.needsInit = !res.initialized;
+      meId = res.me ? res.me.id : null;
+      if (!res.me && getToken()) clearToken();
+      data = d;
+      snap = currentMap();
+      lastLoad = Date.now();
+    });
+  }
+  function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(flush, 250); }
+  function flush() {
+    clearTimeout(syncTimer); syncTimer = null;
+    if (!ONLINE || !data) return Promise.resolve();
+    if (syncing) return syncing.then(flush);
+    var cur = currentMap(), changes = [], sent = {};
+    Object.keys(cur).forEach(function (k) {
+      if (snap[k] !== cur[k]) { var p = k.split('\u0001'); changes.push({ c: p[0], i: p[1], d: JSON.parse(cur[k]) }); sent[k] = cur[k]; }
+    });
+    Object.keys(snap).forEach(function (k) {
+      if (!(k in cur)) { var p = k.split('\u0001'); changes.push({ c: p[0], i: p[1], d: null }); sent[k] = null; }
+    });
+    if (!changes.length) return Promise.resolve();
+    syncing = Cloud.rpc('lms_sync', { p_token: getToken(), p_changes: changes }).then(function (res) {
+      Object.keys(sent).forEach(function (k) { if (sent[k] === null) delete snap[k]; else snap[k] = sent[k]; });
+      (data.users || []).forEach(function (u) { if ('passHash' in u) { delete u.passHash; snap['users\u0001' + u.id] = JSON.stringify(u); } });
+      if (res && res.error) throw new Error(res.error);
+      if (res && res.rejected && res.rejected.length) {
+        if (window.UI) UI.toast('Sebagian perubahan tidak disimpan karena hak akses Anda.', 'error');
+        return loadOnline().then(function () { if (window.App) App.refresh(); });
+      }
+    }).catch(function (err) {
+      if (window.UI) UI.toast('Gagal menyimpan ke server: ' + err.message, 'error');
+      return loadOnline().then(function () { if (window.App) App.refresh(); }).catch(function () { });
+    }).then(function () { syncing = null; });
+    return syncing;
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (ONLINE && (syncTimer || syncing)) { flush(); e.preventDefault(); e.returnValue = 'Perubahan sedang disimpan.'; }
+  });
+  document.addEventListener('visibilitychange', function () { if (ONLINE && document.visibilityState === 'hidden') flush(); });
+
+  function initOnline() {
+    var s = seed(), records = [];
+    records.push({ c: 'settings', i: 'main', d: s.settings });
+    COLLS.forEach(function (c) { if (c === 'users') return; (s[c] || []).forEach(function (r) { records.push({ c: c, i: recKey(r), d: r }); }); });
+    return Cloud.rpc('lms_init', { p_users: s.users, p_records: records }).then(function (res) {
+      if (res && res.error) throw new Error(res.error);
+      return loadOnline();
+    });
+  }
+
   function load() {
+    if (BADKEY) return Promise.reject(new Error('Kunci di js/config.js adalah SECRET / service_role key yang tidak boleh dipasang di website. Ganti dengan Publishable key (sb_publishable_…) atau anon key, lalu segera buat ulang (rotate) secret key tersebut di Supabase.'));
+    if (ONLINE) return loadOnline();
     var site = window.SITE_DATA;
     try { data = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { data = null; }
     // Jika ada site-data.js (hasil "Publikasikan Data") versi baru, gunakan sebagai data awal
@@ -383,11 +512,13 @@
       Object.keys(files).forEach(function (fid) {
         fetch(files[fid]).then(function (r) { return r.blob(); }).then(function (b) { Files.put(b, fid); }).catch(function () { });
       });
-      return;
+      return Promise.resolve();
     }
     if (!data || !data.meta || data.meta.version !== 3) { data = seed(); save(); }
+    return Promise.resolve();
   }
   function save() {
+    if (ONLINE) { scheduleSync(); return true; }
     try { localStorage.setItem(KEY, JSON.stringify(data)); return true; }
     catch (e) {
       if (window.UI) UI.toast('Penyimpanan browser penuh. Kurangi ukuran gambar atau hapus data lama.', 'error');
@@ -397,8 +528,22 @@
 
   var DB = {
     sha256: sha256, hashPass: hashPass, uid: uid, Files: Files,
+    online: ONLINE, needsInit: false,
     get data() { return data; },
-    load: load, save: save,
+    load: load, save: save, flush: flush, initOnline: initOnline,
+    /* Muat ulang dari server bila data sudah lebih dari 30 detik */
+    refreshIfStale: function () {
+      if (!ONLINE || Date.now() - lastLoad < 30000) return Promise.resolve(false);
+      return flush().then(loadOnline).then(function () { return true; });
+    },
+    verify: function (code) { return Cloud.rpc('lms_verify', { p_code: code }); },
+    classCount: function (kid) {
+      var local = data.enrollments.filter(function (e) { return e.classId === kid; }).length;
+      return ONLINE && stats.classCounts ? Math.max(local, Number(stats.classCounts[kid] || 0)) : local;
+    },
+    bumpClass: function (kid) { if (stats.classCounts) stats.classCounts[kid] = Number(stats.classCounts[kid] || 0) + 1; },
+    countLearners: function () { var n = data.users.filter(function (u) { return u.role === 'learner'; }).length; return ONLINE && stats.learners != null ? Math.max(n, stats.learners) : n; },
+    countCertificates: function () { var n = data.certificates.length; return ONLINE && stats.certificates != null ? Math.max(n, stats.certificates) : n; },
     reset: function () { data = seed(); save(); return Files.clear(); },
     replaceAll: function (obj) { data = obj; save(); },
     all: function (t) { return data[t] || []; },
@@ -481,7 +626,7 @@
     issueCertificate: function (uidv, pid, classId, auto) {
       var p = DB.find('programs', pid), cat = p ? DB.find('categories', p.categoryId) : null;
       var code = ('IA-' + Math.random().toString(36).slice(2, 6) + '-' + Math.random().toString(36).slice(2, 6)).toUpperCase();
-      var num = 'IA/' + ((cat && cat.slug) ? cat.slug.slice(0, 2).toUpperCase() : 'GN') + '/' + new Date().getFullYear() + '/' + String(data.certificates.length + 1).padStart(3, '0');
+      var num = 'IA/' + ((cat && cat.slug) ? cat.slug.slice(0, 2).toUpperCase() : 'GN') + '/' + new Date().getFullYear() + '/' + Date.now().toString(36).toUpperCase().slice(-6);
       var c = { id: uid('ct'), userId: uidv, programId: pid, classId: classId || null, number: num, code: code, issuedAt: nowISO() };
       data.certificates.push(c);
       var en = DB.enrollment(uidv, pid);
@@ -496,33 +641,73 @@
   /* ---------- Auth ---------- */
   var Auth = {
     user: function () {
-      var id = sessionStorage.getItem(SESSION) || localStorage.getItem(SESSION);
-      if (!id || !data) return null;
+      if (!data) return null;
+      var id = ONLINE ? meId : (sessionStorage.getItem(SESSION) || localStorage.getItem(SESSION));
+      if (!id) return null;
       var u = DB.find('users', id);
       return (u && u.status === 'active') ? u : null;
     },
+    /* Semua fungsi akun mengembalikan Promise (berlaku untuk mode lokal & online) */
     login: function (identity, password, remember) {
+      if (ONLINE) {
+        return Cloud.rpc('lms_login', { p_identity: identity, p_hash: hashPass(password) }).then(function (res) {
+          if (!res || res.error) return { ok: false, msg: (res && res.error) || 'Gagal masuk.' };
+          setToken(res.token, remember);
+          return loadOnline().then(function () { DB.log('Login', 'auth'); return { ok: true, user: Auth.user() }; });
+        }).catch(function (e) { return { ok: false, msg: e.message }; });
+      }
       identity = (identity || '').trim().toLowerCase();
       var u = data.users.find(function (x) { return x.username.toLowerCase() === identity || x.email.toLowerCase() === identity; });
-      if (!u || u.passHash !== hashPass(password)) return { ok: false, msg: 'Username/email atau kata sandi salah.' };
-      if (u.status !== 'active') return { ok: false, msg: 'Akun Anda sedang dinonaktifkan. Hubungi admin.' };
+      if (!u || u.passHash !== hashPass(password)) return Promise.resolve({ ok: false, msg: 'Username/email atau kata sandi salah.' });
+      if (u.status !== 'active') return Promise.resolve({ ok: false, msg: 'Akun Anda sedang dinonaktifkan. Hubungi admin.' });
       sessionStorage.setItem(SESSION, u.id);
       if (remember) localStorage.setItem(SESSION, u.id); else localStorage.removeItem(SESSION);
       u.lastLogin = nowISO(); save();
       DB.log('Login', 'auth');
-      return { ok: true, user: u };
+      return Promise.resolve({ ok: true, user: u });
     },
-    logout: function () { DB.log('Logout', 'auth'); sessionStorage.removeItem(SESSION); localStorage.removeItem(SESSION); },
+    logout: function () {
+      DB.log('Logout', 'auth');
+      if (ONLINE) {
+        var t = getToken();
+        return flush().then(function () { return Cloud.rpc('lms_logout', { p_token: t }).catch(function () { }); })
+          .then(function () { clearToken(); meId = null; return loadOnline(); });
+      }
+      sessionStorage.removeItem(SESSION); localStorage.removeItem(SESSION);
+      return Promise.resolve();
+    },
     register: function (f) {
+      var welcome = function (u) {
+        DB.log('Registrasi akun peserta baru: ' + u.name, 'user');
+        DB.notify(u.id, 'Selamat datang, ' + u.name + '! Jelajahi program pelatihan dan mulai belajar.', '#/programs');
+        DB.notifyRole(['admin'], 'Peserta baru terdaftar: ' + u.name, '#/admin/users');
+        return { ok: true, user: u };
+      };
+      if (ONLINE) {
+        return Cloud.rpc('lms_register', { p_name: f.name, p_username: f.username, p_email: f.email, p_phone: f.phone || '', p_bio: f.business || '', p_hash: hashPass(f.password) })
+          .then(function (res) {
+            if (!res || res.error) return { ok: false, msg: (res && res.error) || 'Pendaftaran gagal.' };
+            setToken(res.token, true);
+            return loadOnline().then(function () { return welcome(Auth.user()); });
+          }).catch(function (e) { return { ok: false, msg: e.message }; });
+      }
       var exists = data.users.some(function (x) { return x.email.toLowerCase() === f.email.toLowerCase() || x.username.toLowerCase() === f.username.toLowerCase(); });
-      if (exists) return { ok: false, msg: 'Email atau username sudah terdaftar.' };
+      if (exists) return Promise.resolve({ ok: false, msg: 'Email atau username sudah terdaftar.' });
       var u = { id: uid('u'), username: f.username, name: f.name, email: f.email, phone: f.phone || '', role: 'learner', passHash: hashPass(f.password), status: 'active', createdAt: nowISO(), bio: f.business || '', expertise: '', avatar: null };
       data.users.push(u); save();
       sessionStorage.setItem(SESSION, u.id);
-      DB.log('Registrasi akun peserta baru: ' + u.name, 'user');
-      DB.notify(u.id, 'Selamat datang, ' + u.name + '! Jelajahi program pelatihan dan mulai belajar.', '#/programs');
-      DB.notifyRole(['admin'], 'Peserta baru terdaftar: ' + u.name, '#/admin/users');
-      return { ok: true, user: u };
+      return Promise.resolve(welcome(u));
+    },
+    changePassword: function (oldPw, newPw) {
+      if (ONLINE) {
+        return Cloud.rpc('lms_change_password', { p_token: getToken(), p_old: hashPass(oldPw), p_new: hashPass(newPw) })
+          .then(function (res) { return res && res.ok ? { ok: true } : { ok: false, msg: (res && res.error) || 'Gagal.' }; })
+          .catch(function (e) { return { ok: false, msg: e.message }; });
+      }
+      var u = Auth.user();
+      if (hashPass(oldPw) !== u.passHash) return Promise.resolve({ ok: false, msg: 'Kata sandi saat ini salah.' });
+      u.passHash = hashPass(newPw); save();
+      return Promise.resolve({ ok: true });
     },
     hasRole: function () { var u = Auth.user(); if (!u) return false; return Array.prototype.slice.call(arguments).indexOf(u.role) > -1; }
   };

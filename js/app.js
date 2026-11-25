@@ -72,7 +72,16 @@
     return params;
   }
 
+  var busy = false;
   function route() {
+    if (DB.online && DB.needsInit) return P.setup();
+    if (busy) return;
+    var stale = DB.refreshIfStale();
+    stale.then(function (did) { if (did) { busy = true; try { doRoute(); } finally { busy = false; } } })
+      .catch(function (e) { UI.toast(e.message, 'error'); });
+    doRoute();
+  }
+  function doRoute() {
     UI.closeModal();
     var r = parse();
     for (var i = 0; i < routes.length; i++) {
@@ -113,15 +122,20 @@
         ov.onclick = function () { sb.classList.remove('open'); ov.classList.remove('open'); };
       }
       UI.$$('[data-logout]').forEach(function (a) {
-        a.onclick = function (e) { e.preventDefault(); Auth.logout(); UI.toast('Anda telah keluar.', 'info'); location.hash = '#/'; };
+        a.onclick = function (e) {
+          e.preventDefault();
+          Auth.logout().then(function () { UI.toast('Anda telah keluar.', 'info'); if (location.hash === '#/' || location.hash === '') route(); else location.hash = '#/'; });
+        };
       });
     },
     refresh: route
   };
 
   window.addEventListener('hashchange', route);
+  function bootError(err) {
+    document.getElementById('app').innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;padding:2rem;font-family:system-ui"><div style="max-width:560px;text-align:center"><h2>Tidak dapat memuat data</h2><p style="color:#5F5B6E">' + UI.esc(err.message) + '</p><button onclick="location.reload()" style="padding:.7rem 1.2rem;border-radius:10px;border:0;background:#6D28D9;color:#fff;font-weight:700;cursor:pointer">Coba lagi</button></div></div>';
+  }
   document.addEventListener('DOMContentLoaded', function () {
-    DB.load();
-    route();
+    DB.load().then(route).catch(bootError);
   });
 })();
