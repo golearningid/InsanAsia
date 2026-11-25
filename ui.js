@@ -290,9 +290,7 @@
     var navHTML = nav.map(function (n, i) { return '<a href="' + n[0] + '" class="' + (active === n[2] ? 'active' : '') + '" style="--i:' + i + '"><span class="nav-ic">' + icon(NIC[n[2]], 18) + '</span><span>' + n[1] + '</span></a>'; }).join('');
     var actions = u ? '<a href="#/dashboard" class="btn btn-primary btn-sm">' + icon('grid', 16) + ' Dashboard</a>'
       : '<a href="#/login" class="btn btn-ghost btn-sm">Masuk</a>' + (s.allowRegistration !== false ? '<a href="#/register" class="btn btn-primary btn-sm">Daftar</a>' : '');
-    var ann = DB.all('announcements').filter(function (a) { return a.visible; })[0];
-    return (ann ? '<div class="announce">' + icon('bell', 14) + ' <b>' + esc(ann.title) + '</b> <span>' + esc(ann.body) + '</span></div>' : '') +
-      '<header class="topbar"><div class="container topbar-in">' + logoHTML(s) +
+    return '<header class="topbar"><div class="container topbar-in">' + logoHTML(s) +
       '<nav class="mainnav" id="mainnav" aria-label="Navigasi utama">' + navHTML + '<div class="nav-actions-m" style="--i:' + nav.length + '">' + actions + '</div></nav>' +
       '<div class="nav-actions">' + actions + '</div>' +
       '<button class="icon-btn burger" id="burger" aria-label="Buka menu" aria-expanded="false" aria-controls="mainnav"><span></span><span></span><span></span></button></div></header>' +
@@ -410,10 +408,41 @@
   }
 
 
+
+  /* ---------- Latar hero: pita kaca abstrak yang bergerak perlahan ---------- */
+  var RIB = [
+    { cls: 'r1', d: 'M-260 760 C 120 360, 420 980, 820 520 S 1460 60, 1760 300', w: 230, g: ['#1E1B4B', '#5B21B6', '#A78BFA', '#EDE9FE'] },
+    { cls: 'r2', d: 'M-200 80 C 240 300, 380 -40, 780 170 S 1260 640, 1700 470', w: 150, g: ['#0F0B2A', '#3730A3', '#8B5CF6', '#C4B5FD'] },
+    { cls: 'r3', d: 'M1700 1000 C 1260 680, 1060 980, 700 760 S 220 520, -220 820', w: 270, g: ['#120B2E', '#4C1D95', '#7C3AED', '#DDD6FE'] },
+    { cls: 'r4', d: 'M1120 -120 C 980 200, 1320 360, 1180 620 S 1240 980, 1500 1080', w: 120, g: ['#1E1B4B', '#6D28D9', '#C084FC', '#F5D0FE'] }
+  ];
+  function heroBg(img, soft) {
+    if (img) return '<div class="hero-bg" aria-hidden="true"><img src="' + img + '" alt=""></div><div class="hero-veil" aria-hidden="true"></div>';
+    var layers = RIB.map(function (r, i) {
+      var id = 'rg' + i + (soft ? 's' : '');
+      return '<svg class="rib ' + r.cls + '" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs>' +
+        '<linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + r.g[0] + '"/><stop offset=".45" stop-color="' + r.g[1] + '"/><stop offset=".8" stop-color="' + r.g[2] + '"/><stop offset="1" stop-color="' + r.g[3] + '"/></linearGradient>' +
+        '<linearGradient id="' + id + 'h" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+        '<path d="' + r.d + '" fill="none" stroke="#05040C" stroke-opacity=".55" stroke-width="' + (r.w + 26) + '" stroke-linecap="round" transform="translate(0 18)"/>' +
+        '<path d="' + r.d + '" fill="none" stroke="url(#' + id + ')" stroke-width="' + r.w + '" stroke-linecap="round"/>' +
+        '<path d="' + r.d + '" fill="none" stroke="url(#' + id + 'h)" stroke-width="' + Math.round(r.w * 0.16) + '" stroke-linecap="round" transform="translate(0 -' + Math.round(r.w * 0.28) + ')"/>' +
+        '</svg>';
+    }).join('');
+    return '<div class="hero-bg' + (soft ? ' soft' : '') + '" aria-hidden="true">' + layers + '</div><div class="hero-veil" aria-hidden="true"></div>';
+  }
+  /* Judul dengan kata aksen miring: tulis *kata* di Pengaturan Website › Beranda */
+  function accentTitle(t) {
+    t = String(t || '');
+    if (/\*[^*]+\*/.test(t)) return esc(t).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    var w = t.split(' ');
+    if (w.length > 2) { var core = w[1].replace(/[.,!?]+$/, ''); var tail = w[1].slice(core.length); w[1] = '\u0001' + core + '\u0002' + tail; }
+    return esc(w.join(' ')).replace('\u0001', '<em>').replace('\u0002', '</em>');
+  }
+
   window.UI = {
     $: $, $$: $$, esc: esc, safeUrl: safeUrl, fmtDate: fmtDate, toLocalInput: toLocalInput, md: md, icon: icon, toast: toast, modal: modal, closeModal: closeModal,
     confirm: confirmBox, formModal: formModal, fieldHTML: fieldHTML, readForm: readForm, readImage: readImage, storeFile: storeFile, openStoredFile: openStoredFile,
     badge: badge, statusBadge: statusBadge, progressBar: progressBar, avatar: avatar, empty: empty, stat: stat, logoHTML: logoHTML, programThumb: programThumb,
-    barChart: barChart, lineChart: lineChart, animate: animate, publicLayout: publicLayout, appLayout: appLayout, initials: initials, MENUS: MENUS
+    barChart: barChart, lineChart: lineChart, animate: animate, heroBg: heroBg, accentTitle: accentTitle, publicLayout: publicLayout, appLayout: appLayout, initials: initials, MENUS: MENUS
   };
 })();

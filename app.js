@@ -115,6 +115,15 @@
   }
 
   var lastKey = null;
+  /* Navbar gelap saat berada di atas hero, terang setelah di-scroll */
+  var navTick = false;
+  function updateNav() {
+    navTick = false;
+    var h = document.querySelector('#main > .hero, #main > .page-hero');
+    var dark = !!h && h.getBoundingClientRect().bottom > 72;
+    document.body.classList.toggle('nav-dark', dark);
+  }
+  window.addEventListener('scroll', function () { if (!navTick) { navTick = true; requestAnimationFrame(updateNav); } }, { passive: true });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.body.classList.remove('nav-open'); });
   var App = window.App = {
     render: function (html) {
@@ -127,6 +136,7 @@
       if (fresh) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       else window.scrollTo({ top: prevScroll, left: 0, behavior: 'instant' });
       UI.animate(root, fresh, { first: !App.booted, vt: !!App.inTransition });
+      updateNav();
       var s = DB.settings();
       document.title = s.siteName + ' – ' + s.tagline;
       var fav = document.getElementById('favicon');
