@@ -311,21 +311,18 @@
     return '<div class="auth"><div class="auth-side">' + UI.logoHTML(s, true) + '<div><div class="eyebrow" style="color:#C4B5FD">' + esc(s.tagline) + '</div><h2>Belajar keterampilan praktis untuk usaha dan karier Anda.</h2><p>Materi terstruktur, latihan langsung, feedback trainer, dan e-sertifikat — semuanya dalam satu platform.</p></div><small style="color:#8F88A6">© ' + new Date().getFullYear() + ' ' + esc(s.siteName) + '</small></div>' +
       '<div class="auth-form"><div class="auth-box">' + form + '</div></div></div>';
   }
-  var DEMO = [['Learner', 'Lrn', 'Learner123'], ['Trainer Internal', 'Trn', 'Trainer123'], ['Enterprise Coach', 'Enp', 'Enterprise123'], ['Administrator System', 'Adm', 'Admin123'], ['Executive Viewer', 'Exe', 'Executive123']];
 
   Pages.login = function (params, q) {
     if (Auth.user()) return (location.hash = '#/dashboard');
     var html = authShell('<a href="#/" class="muted" style="font-size:.88rem">← Kembali ke beranda</a><h1 class="mt">Masuk ke akun Anda</h1><p class="muted">Gunakan username atau email yang terdaftar.</p>' +
-      '<form id="lf" class="form-1" novalidate>' + UI.fieldHTML({ name: 'identity', label: 'Username atau Email', required: true, placeholder: 'contoh: Lrn' }) +
+      '<form id="lf" class="form-1" novalidate>' + UI.fieldHTML({ name: 'identity', label: 'Username atau Email', required: true, placeholder: 'Username atau email Anda' }) +
       '<div class="field" data-field="password"><label for="f_password">Kata sandi <span class="req">*</span></label><div style="position:relative"><input type="password" id="f_password" name="password" required autocomplete="current-password"><button type="button" class="icon-btn" id="togglepw" aria-label="Tampilkan kata sandi" style="position:absolute;right:2px;top:1px">' + icon('eye') + '</button></div><small class="err"></small></div>' +
       '<div class="row between"><label class="row" style="gap:.4rem;font-size:.88rem"><input type="checkbox" name="remember"> Ingat saya</label><a href="#/forgot" style="font-size:.88rem">Lupa kata sandi?</a></div>' +
       '<div id="lerr" class="err" role="alert"></div><button class="btn btn-primary btn-lg">Masuk</button></form>' +
-      '<p class="center mt">Belum punya akun? <a href="#/register"><b>Daftar sebagai peserta</b></a></p>' +
-      '<div class="demo-box"><h4>' + icon('lock', 14) + ' Akun demo (klik untuk mengisi)</h4><div class="demo-list">' + DEMO.map(function (d) { return '<button type="button" data-u="' + d[1] + '" data-p="' + d[2] + '"><span>' + d[0] + '</span><code>' + d[1] + ' / ' + d[2] + '</code></button>'; }).join('') + '</div></div>');
+      '<p class="center mt">Belum punya akun? <a href="#/register"><b>Daftar sebagai peserta</b></a></p>');
     App.render(html);
     var f = UI.$('#lf');
     UI.$('#togglepw').onclick = function () { var i = UI.$('#f_password'); i.type = i.type === 'password' ? 'text' : 'password'; };
-    UI.$$('.demo-list button').forEach(function (b) { b.onclick = function () { f.identity.value = b.dataset.u; f.password.value = b.dataset.p; f.identity.focus(); }; });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!f.identity.value.trim() || !f.password.value) { UI.$('#lerr').textContent = 'Username dan kata sandi wajib diisi.'; return; }
