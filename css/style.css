@@ -500,8 +500,8 @@ td .row { flex-wrap: nowrap; }
    ========================================================= */
 @media (prefers-reduced-motion: no-preference) {
   /* Masuk halaman */
-  .page-enter { animation: pageIn .5s cubic-bezier(.2, .8, .2, 1) both; }
-  @keyframes pageIn { from { opacity: 0; transform: translateY(12px); } }
+  .page-enter { animation: pageIn .3s ease-out both; }
+  @keyframes pageIn { from { opacity: .4; } }
 
   /* Muncul saat di-scroll (diaktifkan oleh JS) */
   .rv { opacity: 0; transform: translateY(24px); transition: opacity .65s cubic-bezier(.2, .8, .2, 1), transform .65s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--d, 0) * 70ms); }
@@ -513,9 +513,9 @@ td .row { flex-wrap: nowrap; }
   .hero::after { width: 300px; height: 300px; background: rgba(109, 40, 217, .3); bottom: -140px; left: -60px; animation: blob 18s ease-in-out infinite reverse; }
   .hero-in { position: relative; z-index: 1; }
   @keyframes blob { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(40px, 30px) scale(1.1); } 66% { transform: translate(-30px, 20px) scale(.95); } }
-  .hero .eyebrow, .hero h1, .hero .lead, .hero .row, .hero-stats, .hero-card, .hero-img { animation: heroIn .9s cubic-bezier(.2, .8, .2, 1) both; }
-  .hero h1 { animation-delay: .08s; } .hero .lead { animation-delay: .16s; } .hero .row { animation-delay: .24s; } .hero-stats { animation-delay: .32s; }
-  .hero-card, .hero-img { animation-delay: .3s; }
+  .first-load .hero .eyebrow, .first-load .hero h1, .first-load .hero .lead, .first-load .hero .row, .first-load .hero-stats, .first-load .hero-card, .first-load .hero-img { animation: heroIn .9s cubic-bezier(.2, .8, .2, 1) both; }
+  .first-load .hero h1 { animation-delay: .08s; } .first-load .hero .lead { animation-delay: .16s; } .first-load .hero .row { animation-delay: .24s; } .first-load .hero-stats { animation-delay: .32s; }
+  .first-load .hero-card, .first-load .hero-img { animation-delay: .3s; }
   @keyframes heroIn { from { opacity: 0; transform: translateY(26px); } }
   .hero-card .hc-row { animation: floatY 6s ease-in-out infinite; }
   .hero-card .hc-row:nth-child(2) { animation-delay: -2s; } .hero-card .hc-row:nth-child(3) { animation-delay: -4s; }
@@ -558,11 +558,11 @@ td .row { flex-wrap: nowrap; }
   }
 
   /* Progres & grafik */
-  .progress span, .hbar-t span { transform-origin: left center; animation: growX 1.1s cubic-bezier(.2, .8, .2, 1) both; animation-delay: .2s; }
+  .first-load .progress span, .first-load .hbar-t span { transform-origin: left center; animation: growX 1.1s cubic-bezier(.2, .8, .2, 1) both; animation-delay: .2s; }
   @keyframes growX { from { transform: scaleX(0); } }
-  .linechart .ln { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: draw 1.6s cubic-bezier(.4, 0, .2, 1) .2s forwards; }
+  .first-load .linechart .ln { stroke-dasharray: 2400; stroke-dashoffset: 2400; animation: draw 1.6s cubic-bezier(.4, 0, .2, 1) .2s forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
-  .linechart .dot { transform-box: fill-box; transform-origin: center; animation: popIn .4s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: 1.2s; }
+  .first-load .linechart .dot { transform-box: fill-box; transform-origin: center; animation: popIn .4s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: 1.2s; }
   .score-ring { animation: popIn .6s cubic-bezier(.3, 1.5, .5, 1) both; }
   @keyframes popIn { from { opacity: 0; transform: scale(.4); } }
 
@@ -591,7 +591,7 @@ td .row { flex-wrap: nowrap; }
   .syllabus a:hover { transform: translateX(3px); }
   .avatar { transition: transform .3s cubic-bezier(.3, 1.4, .5, 1); }
   .me:hover .avatar { transform: scale(1.08); }
-  .tick.done { animation: popIn .35s cubic-bezier(.3, 1.6, .5, 1) both; }
+
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -729,11 +729,141 @@ body { background: #FDFCFF; }
 }
 @media (prefers-reduced-motion: no-preference) {
   @media (max-width: 980px) {
-    .tabbar { animation: tabIn .6s cubic-bezier(.2, .9, .3, 1.15) both .15s; }
+    .first-load .tabbar { animation: tabIn .6s cubic-bezier(.2, .9, .3, 1.15) both .15s; }
     @keyframes tabIn { from { opacity: 0; transform: translateY(30px); } }
-    .tb-item.on .tb-ic { animation: popIn .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+
   }
-  @media (min-width: 981px) { .topbar-in { animation: pillIn .7s cubic-bezier(.2, .9, .3, 1.1) both; } }
-  @media (max-width: 980px) { .topbar-in::before { animation: pillIn .7s cubic-bezier(.2, .9, .3, 1.1) both; } }
+  @media (min-width: 981px) { .first-load .topbar-in { animation: pillIn .7s cubic-bezier(.2, .9, .3, 1.1) both; } }
+  @media (max-width: 980px) { .first-load .topbar-in::before { animation: pillIn .7s cubic-bezier(.2, .9, .3, 1.1) both; } }
   @keyframes pillIn { from { opacity: 0; transform: translateY(-16px) scale(.98); } }
+}
+
+/* =========================================================
+   PERPINDAHAN HALAMAN: fade lembut biasa
+   Halaman lama tetap utuh di bawah, halaman baru larut perlahan di atasnya.
+   Tidak ada elemen yang dipisah (navbar kaca tetap tampil normal, tanpa kedip).
+   ========================================================= */
+* { -webkit-tap-highlight-color: transparent; }
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: vtFade .38s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes vtFade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* =========================================================
+   HERO v3 – gelap, pita kaca abstrak, konten di tengah
+   ========================================================= */
+.hero { position: relative; overflow: hidden; isolation: isolate; background: #07060F; min-height: min(100vh, 880px); display: flex; align-items: center; }
+.hero::before, .hero::after { content: none !important; }
+.hero-bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+.hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+.hero-bg .rib { position: absolute; inset: -12%; width: 124%; height: 124%; will-change: transform; }
+.hero-bg .r1 { opacity: .95; } .hero-bg .r2 { opacity: .8; } .hero-bg .r3 { opacity: .9; } .hero-bg .r4 { opacity: .7; }
+.hero-veil { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 58% 52% at 50% 52%, rgba(7, 6, 15, .78) 0%, rgba(7, 6, 15, .45) 55%, rgba(7, 6, 15, .12) 100%),
+              linear-gradient(180deg, rgba(7, 6, 15, .55) 0%, transparent 22%, transparent 72%, rgba(7, 6, 15, .92) 100%); }
+.hero-center { position: relative; text-align: center; max-width: 960px; padding: calc(6.5rem + 40px) 0 5.5rem; display: flex; flex-direction: column; align-items: center; }
+.hero-badge { display: inline-flex; align-items: center; gap: .55rem; padding: .38rem .9rem .38rem .4rem; border-radius: 999px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .16); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #E9E3FF; font-size: .86rem; font-weight: 500; text-decoration: none !important; transition: background .3s, border-color .3s; }
+a.hero-badge:hover { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .28); }
+.hb-ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; }
+.hb-arr { opacity: .7; display: inline-flex; }
+.hero h1 { color: #fff; font-size: clamp(2.5rem, 6.4vw, 5rem); line-height: 1.04; letter-spacing: -.04em; font-weight: 700; margin: 1.5rem 0 1.3rem; text-wrap: balance; }
+.hero h1 em { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; letter-spacing: -.01em; padding-right: .03em; margin-right: -.04em;
+  background: linear-gradient(95deg, #F5F3FF 0%, #C4B5FD 45%, #F0ABFC 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lead { max-width: 620px; margin: 0 auto; color: rgba(233, 227, 255, .78); font-size: clamp(1rem, 1.5vw, 1.15rem); text-wrap: pretty; }
+.hero-cta { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; margin-top: 2.3rem; }
+.btn-white { background: #fff; color: #120E1F; border-radius: 999px; padding-inline: 1.7rem; box-shadow: 0 10px 34px rgba(196, 181, 253, .22); }
+.btn-white:hover { background: #F4EFFF; color: #120E1F; }
+.btn-glass { background: rgba(255, 255, 255, .07); color: #fff; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; padding-inline: 1.5rem; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.btn-glass:hover { background: rgba(255, 255, 255, .13); color: #fff; }
+.hero-meta { margin-top: 3rem; display: flex; align-items: center; gap: 1rem; color: rgba(233, 227, 255, .6); font-size: .88rem; flex-wrap: wrap; justify-content: center; }
+.hero-meta b { color: #fff; font-weight: 700; }
+.hero-meta i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+
+/* Header halaman lain: latar pita yang sama, lebih tenang */
+.page-hero { position: relative; overflow: hidden; isolation: isolate; background: #08061A; }
+.page-hero .hero-bg.soft .rib { opacity: .55; }
+.page-hero .hero-veil { background: linear-gradient(90deg, rgba(8, 6, 26, .88) 0%, rgba(8, 6, 26, .55) 55%, rgba(8, 6, 26, .25) 100%), linear-gradient(180deg, rgba(8, 6, 26, .5), transparent 40%, rgba(8, 6, 26, .6)); }
+
+/* Navbar gelap di atas hero (desktop & mobile) */
+.topbar-in::before, .topbar-in .logo, .mainnav a, .nav-actions .btn { transition: background .45s ease, border-color .45s ease, box-shadow .45s ease, color .45s ease; }
+body.nav-dark .topbar-in::before { background: rgba(14, 10, 30, .5); border-color: rgba(255, 255, 255, .12); box-shadow: 0 10px 34px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .08); }
+body.nav-dark .topbar-in .logo { color: #fff; }
+body.nav-dark .nav-actions .btn-ghost { background: transparent; border-color: transparent; color: rgba(255, 255, 255, .88); box-shadow: none; }
+body.nav-dark .nav-actions .btn-ghost:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+body.nav-dark .nav-actions .btn-primary { background: #fff; color: #120E1F; box-shadow: none; }
+body.nav-dark .nav-actions .btn-primary:hover { background: #F4EFFF; }
+@media (min-width: 981px) {
+  body.nav-dark .mainnav a { color: rgba(255, 255, 255, .74); }
+  body.nav-dark .mainnav a:hover { color: #fff; background: rgba(255, 255, 255, .09); }
+  body.nav-dark .mainnav a.active { color: #fff; background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+}
+
+@media (max-width: 980px) {
+  .hero { min-height: auto; }
+  .hero-center { padding: calc(4.5rem + 40px) 0 4rem; }
+  .hero h1 { font-size: clamp(2.2rem, 10vw, 3rem); }
+  .hero .lead { font-size: .98rem; }
+  .hero-cta .btn { flex: 1 1 auto; }
+  .hero-meta { margin-top: 2.2rem; gap: .7rem; font-size: .82rem; }
+  .hero-bg .rib { inset: -30% -60%; width: 220%; height: 160%; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-bg .r1 { animation: ribA 26s ease-in-out infinite; }
+  .hero-bg .r2 { animation: ribB 32s ease-in-out infinite; }
+  .hero-bg .r3 { animation: ribC 29s ease-in-out infinite; }
+  .hero-bg .r4 { animation: ribB 36s ease-in-out infinite reverse; }
+  .hero-bg.soft .rib { animation-duration: 40s; }
+  @keyframes ribA { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 50% { transform: translate3d(-3%, 2.5%, 0) rotate(-3deg) scale(1.05); } }
+  @keyframes ribB { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 50% { transform: translate3d(3%, -2%, 0) rotate(2.5deg) scale(1.04); } }
+  @keyframes ribC { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.02); } 50% { transform: translate3d(-2%, -3%, 0) rotate(3deg) scale(1); } }
+  .first-load .hero-badge, .first-load .hero h1, .first-load .hero .lead, .first-load .hero-cta, .first-load .hero-meta { animation: heroUp 1s cubic-bezier(.22, 1, .36, 1) both; }
+  .first-load .hero h1 { animation-delay: .1s; } .first-load .hero .lead { animation-delay: .2s; } .first-load .hero-cta { animation-delay: .3s; } .first-load .hero-meta { animation-delay: .4s; }
+  .first-load .hero-bg { animation: bgIn 1.6s ease-out both; }
+  @keyframes heroUp { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } }
+  @keyframes bgIn { from { opacity: 0; transform: scale(1.06); } }
+}
+
+/* =========================================================
+   NAVBAR & TAB BAR GLOSSY (kilap kaca)
+   ========================================================= */
+.topbar-in::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .12) 48%, rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, .06) 100%),
+    rgba(255, 255, 255, .72);
+  border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: 0 12px 36px rgba(31, 16, 70, .16), 0 2px 6px rgba(31, 16, 70, .06),
+              inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 -1px 0 rgba(124, 58, 237, .08);
+}
+/* kilau yang menyapu perlahan */
+.topbar-in::after, .tabbar::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; overflow: hidden;
+  background: linear-gradient(105deg, transparent 0%, transparent 38%, rgba(255, 255, 255, .55) 48%, rgba(255, 255, 255, .15) 54%, transparent 62%, transparent 100%);
+  background-size: 250% 100%; background-position: 130% 0; opacity: .9;
+}
+body.nav-dark .topbar-in::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, .04) 48%, rgba(255, 255, 255, 0) 52%, rgba(167, 139, 250, .08) 100%),
+    rgba(16, 11, 34, .52);
+  border-color: rgba(255, 255, 255, .16);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 0 rgba(167, 139, 250, .18);
+}
+body.nav-dark .topbar-in::after { opacity: .35; }
+/* tombol & menu aktif ikut mengkilap */
+.mainnav a.active, .nav-actions .btn-primary, .tb-item.on .tb-ic, .btn-primary {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, 0) 55%), var(--grad);
+}
+body.nav-dark .mainnav a.active { background-image: linear-gradient(180deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .06) 55%); }
+body.nav-dark .nav-actions .btn-primary, .btn-white { background-image: linear-gradient(180deg, #fff 0%, #F1ECFF 100%); }
+@media (max-width: 980px) {
+  .tabbar { position: fixed; isolation: isolate;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .6) 0%, rgba(255, 255, 255, .15) 48%, rgba(255, 255, 255, 0) 52%), rgba(255, 255, 255, .9);
+    border: 1px solid rgba(255, 255, 255, .9);
+    box-shadow: 0 14px 40px rgba(31, 16, 70, .22), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(124, 58, 237, .1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .topbar-in::after, .tabbar::after { animation: gloss 9s ease-in-out 1.2s infinite; }
+  @keyframes gloss { 0% { background-position: 130% 0; } 28%, 100% { background-position: -30% 0; } }
 }

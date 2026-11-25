@@ -35,20 +35,17 @@
     var arts = DB.where('articles', function (a) { return a.status === 'published'; }).slice(-3).reverse();
     var faqs = DB.where('faqs', function (f) { return f.visible; }).slice(0, 4);
 
-    var heroRight = s.heroImage ? '<img class="hero-img" src="' + s.heroImage + '" alt="Suasana belajar InsanAsia">' :
-      '<div class="hero-card" aria-hidden="true">' +
-      '<div class="hc-row"><div class="hc-ic">' + icon('play') + '</div><div class="grow"><b>Modul 3 – Rumus 4P</b><small>Lanjutkan belajar • 20 menit</small>' + UI.progressBar(64) + '</div></div>' +
-      '<div class="hc-row"><div class="hc-ic">' + icon('quiz') + '</div><div><b>Kuis lulus: 92</b><small>Feedback trainer tersedia</small></div></div>' +
-      '<div class="hc-row"><div class="hc-ic">' + icon('award') + '</div><div><b>E-Sertifikat terbit</b><small>Kode verifikasi tersedia</small></div></div></div>';
-
+    var ann = DB.all('announcements').filter(function (a) { return a.visible; })[0];
+    var badge = ann ? '<a class="hero-badge" href="#/programs"><span class="hb-ic">' + icon('bell', 13) + '</span>' + esc(ann.title) + '<span class="hb-arr">' + icon('arrow', 13) + '</span></a>'
+      : '<span class="hero-badge"><span class="hb-ic">' + icon('star', 13) + '</span>Dipercaya ' + learners + '+ peserta • ' + progs.length + ' program aktif</span>';
     var html =
-      '<section class="hero"><div class="container hero-in"><div>' +
-      '<div class="eyebrow">' + icon('star', 14) + ' ' + esc(s.tagline) + '</div>' +
-      '<h1>' + esc(s.heroTitle) + '</h1><p class="lead">' + esc(s.heroDesc) + '</p>' +
-      '<div class="row mt2"><a href="#/programs" class="btn btn-primary btn-lg">Jelajahi Pelatihan ' + icon('arrow', 16) + '</a>' +
-      (s.allowRegistration !== false ? '<a href="#/register" class="btn btn-outline-w btn-lg">Daftar Sekarang</a>' : '') + '</div>' +
-      '<div class="hero-stats"><div><b>' + progs.length + '</b><span>Program aktif</span></div><div><b>' + learners + '+</b><span>Peserta terdaftar</span></div><div><b>' + certs + '</b><span>Sertifikat terbit</span></div></div>' +
-      '</div><div>' + heroRight + '</div></div></section>' +
+      '<section class="hero">' + UI.heroBg(s.heroImage) +
+      '<div class="container hero-center">' + badge +
+      '<h1>' + UI.accentTitle(s.heroTitle) + '</h1><p class="lead">' + esc(s.heroDesc) + '</p>' +
+      '<div class="hero-cta"><a href="#/programs" class="btn btn-white btn-lg">Jelajahi Pelatihan ' + icon('arrow', 16) + '</a>' +
+      (s.allowRegistration !== false && !Auth.user() ? '<a href="#/register" class="btn btn-glass btn-lg">Daftar Gratis</a>' : '') + '</div>' +
+      '<div class="hero-meta"><span><b>' + progs.length + '</b> program</span><i></i><span><b>' + learners + '+</b> peserta</span><i></i><span><b>' + certs + '</b> sertifikat terbit</span></div>' +
+      '</div></section>' +
 
       '<section class="section"><div class="container"><div class="sec-head"><div class="eyebrow">Kategori</div><h2>Pilih bidang yang ingin Anda kuasai</h2><p>Program disusun bertahap, dimulai dari keterampilan yang paling dibutuhkan pelaku UMKM.</p></div>' +
       '<div class="cards c4">' + cats.map(function (c) {
@@ -85,7 +82,7 @@
   }
 
   function pageHero(title, desc, crumbs) {
-    return '<section class="page-hero"><div class="container">' + (crumbs ? '<div class="crumbs">' + crumbs + '</div>' : '') + '<h1>' + esc(title) + '</h1>' + (desc ? '<p>' + esc(desc) + '</p>' : '') + '</div></section>';
+    return '<section class="page-hero">' + UI.heroBg(null, true) + '<div class="container">' + (crumbs ? '<div class="crumbs">' + crumbs + '</div>' : '') + '<h1>' + esc(title) + '</h1>' + (desc ? '<p>' + esc(desc) + '</p>' : '') + '</div></section>';
   }
   Pages.pageHero = pageHero;
 

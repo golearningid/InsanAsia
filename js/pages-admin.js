@@ -269,9 +269,9 @@
         { name: 'mission', label: 'Misi (satu per baris)', type: 'textarea', rows: 5, value: s.mission }
       ],
       home: [
-        { name: 'heroTitle', label: 'Headline beranda', value: s.heroTitle, required: true, full: true },
+        { name: 'heroTitle', label: 'Headline beranda', value: s.heroTitle, required: true, full: true, help: 'Beri tanda bintang pada kata yang ingin bergaya huruf miring elegan, contoh: Tingkatkan *Skill*, Wujudkan Peluang. Tanpa tanda bintang, kata kedua otomatis dibuat miring.' },
         { name: 'heroDesc', label: 'Deskripsi hero', type: 'textarea', rows: 3, value: s.heroDesc },
-        { name: 'heroImage', label: 'Gambar hero (opsional, mengganti ilustrasi kartu)', type: 'file', accept: 'image/*', full: true },
+        { name: 'heroImage', label: 'Gambar latar hero (opsional, menggantikan latar pita animasi)', type: 'file', accept: 'image/*', full: true },
         { name: 'removeHero', label: 'Hapus gambar hero', type: 'checkbox', value: false }
       ],
       cert: [

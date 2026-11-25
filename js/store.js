@@ -534,7 +534,8 @@
     /* Muat ulang dari server bila data sudah lebih dari 30 detik */
     refreshIfStale: function () {
       if (!ONLINE || Date.now() - lastLoad < 30000) return Promise.resolve(false);
-      return flush().then(loadOnline).then(function () { return true; });
+      var before = JSON.stringify(data);
+      return flush().then(loadOnline).then(function () { return JSON.stringify(data) !== before; });
     },
     verify: function (code) { return Cloud.rpc('lms_verify', { p_code: code }); },
     classCount: function (kid) {

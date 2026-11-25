@@ -72,14 +72,25 @@
     return params;
   }
 
-  var busy = false;
+  var busy = false, routedKey = null;
+  function hashKey() { return location.hash.split('?')[0] + '|' + (location.hash.split('?')[1] || ''); }
+  function reduceMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  /* Pindah halaman: crossfade halus (View Transitions) tanpa memutar ulang animasi */
+  function smooth(fn) {
+    var key = hashKey(), isNew = key !== routedKey; routedKey = key;
+    if (isNew && App.booted && document.startViewTransition && !reduceMotion()) {
+      App.inTransition = true;
+      var t = document.startViewTransition(function () { try { fn(); } finally { App.inTransition = false; } });
+      if (t) ['ready', 'finished', 'updateCallbackDone'].forEach(function (k) { if (t[k] && t[k].catch) t[k].catch(function () { }); });
+    } else fn();
+  }
   function route() {
     if (DB.online && DB.needsInit) return P.setup();
     if (busy) return;
     var stale = DB.refreshIfStale();
-    stale.then(function (did) { if (did) { busy = true; try { doRoute(); } finally { busy = false; } } })
+    stale.then(function (changed) { if (changed) { busy = true; try { doRoute(); } finally { busy = false; } } })
       .catch(function (e) { UI.toast(e.message, 'error'); });
-    doRoute();
+    smooth(doRoute);
   }
   function doRoute() {
     UI.closeModal();
@@ -104,20 +115,32 @@
   }
 
   var lastKey = null;
+  /* Navbar gelap saat berada di atas hero, terang setelah di-scroll */
+  var navTick = false;
+  function updateNav() {
+    navTick = false;
+    var h = document.querySelector('#main > .hero, #main > .page-hero');
+    var dark = !!h && h.getBoundingClientRect().bottom > 72;
+    document.body.classList.toggle('nav-dark', dark);
+  }
+  window.addEventListener('scroll', function () { if (!navTick) { navTick = true; requestAnimationFrame(updateNav); } }, { passive: true });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.body.classList.remove('nav-open'); });
   var App = window.App = {
     render: function (html) {
       var root = document.getElementById('app');
       var key = location.hash.split('?')[0] + '|' + (location.hash.split('?')[1] || '');
       var fresh = key !== lastKey; lastKey = key;
+      var prevScroll = window.scrollY;
       document.body.classList.remove('nav-open', 'no-scroll');
       root.innerHTML = html;
-      UI.animate(root, fresh);
+      if (fresh) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      else window.scrollTo({ top: prevScroll, left: 0, behavior: 'instant' });
+      UI.animate(root, fresh, { first: !App.booted, vt: !!App.inTransition });
+      updateNav();
       var s = DB.settings();
       document.title = s.siteName + ' – ' + s.tagline;
       var fav = document.getElementById('favicon');
       if (fav) fav.href = s.logo || 'assets/favicon.svg';
-      window.scrollTo(0, 0);
       // menu mobile publik
       var burger = document.getElementById('burger');
       if (burger) {
@@ -153,6 +176,10 @@
     document.getElementById('app').innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;padding:2rem;font-family:system-ui"><div style="max-width:560px;text-align:center"><h2>Tidak dapat memuat data</h2><p style="color:#5F5B6E">' + UI.esc(err.message) + '</p><button onclick="location.reload()" style="padding:.7rem 1.2rem;border-radius:10px;border:0;background:#6D28D9;color:#fff;font-weight:700;cursor:pointer">Coba lagi</button></div></div>';
   }
   document.addEventListener('DOMContentLoaded', function () {
-    DB.load().then(route).catch(bootError);
+    document.body.classList.add('first-load');
+    DB.load().then(function () {
+      route(); App.booted = true;
+      setTimeout(function () { document.body.classList.remove('first-load'); }, 1600);
+    }).catch(bootError);
   });
 })();
