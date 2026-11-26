@@ -40,8 +40,8 @@
   Pages.dashLearner = function () {
     var u = me(), ens = myEnrollments(u);
     var progs = ens.map(function (e) { return { e: e, p: DB.find('programs', e.programId), pr: DB.programProgress(u.id, e.programId) }; }).filter(function (x) { return x.p; });
-    var active = progs.filter(function (x) { return x.pr < 100; });
-    var last = active[0] || progs[0];
+    var active = progs.filter(function (x) { return x.pr < 100 && DB.accessOf(u.id, x.p.id) === 'active'; });
+    var last = active[0] || progs.filter(function (x) { return DB.accessOf(u.id, x.p.id) === 'active'; })[0];
     var certs = DB.where('certificates', function (c) { return c.userId === u.id; });
     var attempts = DB.where('attempts', function (a) { return a.userId === u.id; }).slice(-5).reverse();
     var subs = DB.where('submissions', function (s) { return s.userId === u.id && s.status === 'graded'; }).slice(-3).reverse();
@@ -59,7 +59,8 @@
       '<div class="stats">' + UI.stat('Kelas diikuti', progs.length, 'book') + UI.stat('Rata-rata progres', avg + '%', 'chart') + UI.stat('Kuis dikerjakan', DB.where('attempts', function (a) { return a.userId === u.id; }).length, 'quiz') + UI.stat('Sertifikat', certs.length, 'award') + '</div>' +
       '<div class="grid-21"><div class="card"><div class="card-title"><h3>Kelas Saya</h3><a href="#/my-learning" class="btn btn-ghost btn-sm">Lihat semua</a></div>' +
       (progs.length ? '<div class="list">' + progs.map(function (x) {
-        var k = DB.find('classes', x.e.classId);
+        var k = DB.find('classes', x.e.classId), acc = DB.accessOf(u.id, x.p.id);
+        if (acc === 'pending' || acc === 'rejected') return '<div class="list-item"><div class="li-ic">' + icon('wallet') + '</div><div class="li-b"><b>' + esc(x.p.title) + '</b><small>' + esc(k ? k.name : '') + '</small></div>' + (acc === 'pending' ? UI.badge('Menunggu verifikasi', 'amber') : UI.badge('Pembayaran ditolak', 'red')) + '<a class="btn btn-soft btn-sm" href="#/learn/' + esc(x.p.id) + '">Status</a></div>';
         return '<div class="list-item"><div class="li-ic">' + icon('book') + '</div><div class="li-b"><b>' + esc(x.p.title) + '</b><small>' + esc(k ? k.name : '') + '</small>' + UI.progressBar(x.pr, 'Progres ' + x.p.title) + '</div><div class="row"><b>' + x.pr + '%</b><a class="btn btn-soft btn-sm" href="#/learn/' + esc(x.p.id) + '">Buka</a></div></div>';
       }).join('') + '</div>' : UI.empty('Belum ada kelas.', '<a class="btn btn-primary btn-sm" href="#/programs">Cari program</a>')) + '</div>' +
       '<div class="card"><div class="card-title"><h3>Jadwal Mendatang</h3></div>' + sessionList(upcomingSessions(ens.map(function (e) { return e.classId; }))) + '</div></div>' +
@@ -84,6 +85,8 @@
     var html = ens.length ? '<div class="cards">' + ens.map(function (e) {
       var p = DB.find('programs', e.programId); if (!p) return '';
       var k = DB.find('classes', e.classId), pr = DB.programProgress(u.id, p.id), c = DB.certificateOf(u.id, p.id);
+      var acc = DB.accessOf(u.id, p.id);
+      if (acc === 'pending' || acc === 'rejected') return '<div class="card pcard">' + UI.programThumb(p) + '<div class="pc-body"><div class="row">' + (acc === 'pending' ? UI.badge('Menunggu verifikasi pembayaran', 'amber') : UI.badge('Pembayaran ditolak', 'red')) + '</div><h3>' + esc(p.title) + '</h3><p>' + esc(k ? k.name : '') + ' • ' + esc(UI.priceLabel(p)) + '</p><a class="btn btn-primary btn-sm mt" href="#/learn/' + esc(p.id) + '">' + icon('wallet', 14) + ' ' + (acc === 'pending' ? 'Lihat Status Pembayaran' : 'Kirim Ulang Bukti') + '</a></div></div>';
       return '<div class="card pcard">' + UI.programThumb(p) + '<div class="pc-body"><div class="row">' + (c ? UI.badge('Selesai', 'green') : UI.badge('Sedang berjalan', 'purple')) + '</div><h3>' + esc(p.title) + '</h3><p>' + esc(k ? k.name + ' • ' + k.mode : '') + '</p>' +
         '<div class="row between mt"><small class="muted">Progres</small><b>' + pr + '%</b></div>' + UI.progressBar(pr) +
         '<div class="row mt"><a class="btn btn-primary btn-sm grow" href="#/learn/' + esc(p.id) + '">' + (pr ? 'Lanjutkan' : 'Mulai Belajar') + '</a>' + (c ? '<a class="btn btn-ghost btn-sm" href="#/certificate/' + esc(c.id) + '">' + icon('award', 14) + '</a>' : '') + '</div></div></div>';
@@ -158,6 +161,7 @@
     if (!p) return Pages.notFound();
     var en = DB.enrollment(u.id, p.id);
     if (!en) { UI.toast('Anda belum terdaftar di program ini.', 'error'); location.hash = '#/program/' + p.id; return; }
+    if (!Pages.guardPaid(p)) return;
     var lessons = DB.programLessons(p.id);
     var l = params.lid ? DB.find('lessons', params.lid) : null;
     var cert = DB.certificateOf(u.id, p.id), pr = DB.programProgress(u.id, p.id);
@@ -205,6 +209,7 @@
     if (!a || !a.published) return Pages.notFound();
     var p = DB.find('programs', a.programId);
     if (!DB.enrollment(u.id, a.programId)) { UI.toast('Daftar program terlebih dahulu.', 'error'); location.hash = '#/program/' + a.programId; return; }
+    if (!Pages.guardPaid(p)) return;
     var used = DB.attemptsCount(u.id, a.id), max = a.maxAttempts || 0, left = max ? max - used : Infinity;
     var st = DB.assessmentStatus(u.id, a);
     var head = '<div class="viewer"><div class="row between"><div><small class="muted">' + esc(p.title) + '</small><h2 style="margin:0">' + esc(a.title) + '</h2></div>' + UI.badge(TYPE_LABEL[a.type], 'purple') + '</div>' +
@@ -287,7 +292,7 @@
   Pages.myAssessments = function () {
     var u = me(), ens = myEnrollments(u);
     var rows = [];
-    ens.forEach(function (e) {
+    ens.filter(function (e) { return DB.accessOf(u.id, e.programId) === 'active'; }).forEach(function (e) {
       DB.assessmentsOf(e.programId).forEach(function (a) { rows.push({ a: a, p: DB.find('programs', e.programId), st: DB.assessmentStatus(u.id, a) }); });
     });
     var html = '<div class="card">' + (rows.length ? '<div class="table-wrap"><table><thead><tr><th>Assessment</th><th>Program</th><th>Jenis</th><th>Tenggat</th><th>Status</th><th></th></tr></thead><tbody>' + rows.map(function (r) {

@@ -220,7 +220,7 @@
         summary: 'Petakan model bisnis Anda dalam satu halaman dan temukan peluang pertumbuhan baru.',
         description: 'Workshop praktis memetakan 9 blok Business Model Canvas, menguji asumsi, dan menyusun rencana aksi pengembangan usaha.',
         objectives: ['Memahami 9 blok Business Model Canvas', 'Memetakan model bisnis usaha sendiri', 'Menyusun rencana aksi pengembangan'],
-        status: 'published', featured: true, trainerId: 'u_enp', thumbnail: null, color: '#8B5CF6', isFree: true
+        status: 'published', featured: true, trainerId: 'u_enp', thumbnail: null, color: '#8B5CF6', isFree: false, price: 'Rp150.000', priceAmount: 150000
       },
       {
         id: 'p_prod', categoryId: 'c_copy', title: 'Menulis Deskripsi Produk Marketplace', level: 'Pemula', duration: '2 modul • ±3 jam',
@@ -393,14 +393,18 @@
       instagram: 'https://instagram.com/', facebook: 'https://facebook.com/', youtube: 'https://youtube.com/', linkedin: '',
       footerText: 'Lembaga kursus dan pelatihan keterampilan praktis untuk masyarakat dan UMKM.',
       certSigner: 'Direktur InsanAsia', certSignerName: 'Hendra Wijaya', certIssuer: 'InsanAsia Training Center',
-      allowRegistration: true
+      allowRegistration: true,
+      payQris: null, payHolder: 'InsanAsia Training Center',
+      payDana: '', payOvo: '', payGopay: '', payShopeepay: '', payLinkaja: '',
+      payBankName: '', payBankAccount: '', payBankHolder: '',
+      payInstructions: 'Transfer sesuai nominal program, lalu unggah bukti pembayaran (tangkapan layar atau foto struk). Admin akan memverifikasi maksimal 1x24 jam pada hari kerja.'
     };
 
     return {
       meta: { version: 3, createdAt: nowISO(), siteVersion: null },
       settings: settings, users: users, categories: categories, programs: programs, classes: classes,
       modules: modules, lessons: lessons, assessments: assessments, enrollments: enrollments, progress: progress,
-      attempts: attempts, submissions: submissions, certificates: certificates, articles: articles,
+      attempts: attempts, submissions: submissions, certificates: certificates, payments: [], articles: articles,
       testimonials: testimonials, faqs: faqs, announcements: announcements,
       notifications: [
         { id: uid('n'), userId: 'u_lrn', text: 'Selamat datang di InsanAsia LMS! Lanjutkan kelas Copywriting for UMKM Anda.', link: '#/my-learning', read: false, date: daysFromNow(-1) },
@@ -423,7 +427,7 @@
   /* ===== Mode online: muat, sinkronkan, inisialisasi ===== */
   var TOKEN = 'insanasia_lms_token';
   var COLLS = ['users', 'categories', 'programs', 'classes', 'modules', 'lessons', 'assessments', 'enrollments', 'progress', 'attempts',
-    'submissions', 'certificates', 'articles', 'testimonials', 'faqs', 'announcements', 'notifications', 'logs', 'messages'];
+    'submissions', 'certificates', 'payments', 'articles', 'testimonials', 'faqs', 'announcements', 'notifications', 'logs', 'messages'];
   var snap = {}, meId = null, lastLoad = 0, syncTimer = null, syncing = null, stats = {};
   function getToken() { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); }
   function setToken(t, remember) { clearToken(); (remember ? localStorage : sessionStorage).setItem(TOKEN, t); }
@@ -445,7 +449,9 @@
         else if (d[r.c]) d[r.c].push(r.d);
       });
       d.users = res.users || [];
-      if (!d.settings) d.settings = seed().settings;
+      var defs = seed().settings;
+      if (!d.settings) d.settings = defs;
+      else Object.keys(defs).forEach(function (k) { if (!(k in d.settings)) d.settings[k] = defs[k]; });
       ['logs', 'notifications', 'messages'].forEach(function (c) { d[c].sort(byDateDesc); });
       stats = res.stats || {};
       DB.needsInit = !res.initialized;
@@ -515,6 +521,7 @@
       return Promise.resolve();
     }
     if (!data || !data.meta || data.meta.version !== 3) { data = seed(); save(); }
+    if (!data.payments) data.payments = [];
     return Promise.resolve();
   }
   function save() {
@@ -537,6 +544,17 @@
       var before = JSON.stringify(data);
       return flush().then(loadOnline).then(function () { return JSON.stringify(data) !== before; });
     },
+    /* Muat ulang penuh dari server (mis. setelah pembayaran disetujui) */
+    reload: function () { return ONLINE ? flush().then(loadOnline) : Promise.resolve(); },
+    /* Status akses peserta ke program: none | pending | rejected | active */
+    accessOf: function (uidv, pid) {
+      var en = DB.enrollment(uidv, pid);
+      if (!en) return 'none';
+      if (en.status === 'pending_payment') return 'pending';
+      if (en.status === 'payment_rejected') return 'rejected';
+      return 'active';
+    },
+    isPaid: function (p) { return !!p && p.isFree === false; },
     verify: function (code) { return Cloud.rpc('lms_verify', { p_code: code }); },
     classCount: function (kid) {
       var local = data.enrollments.filter(function (e) { return e.classId === kid; }).length;
@@ -618,7 +636,7 @@
     /* Terbitkan sertifikat bila syarat terpenuhi */
     checkCompletion: function (uidv, pid) {
       var en = DB.enrollment(uidv, pid);
-      if (!en) return null;
+      if (!en || en.status === 'pending_payment' || en.status === 'payment_rejected') return null;
       if (DB.programProgress(uidv, pid) < 100) return null;
       var c = DB.certificateOf(uidv, pid);
       if (c) return c;

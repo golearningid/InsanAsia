@@ -29,6 +29,12 @@
     var p = function (n) { return String(n).padStart(2, '0'); };
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
+  function rupiah(v) {
+    var n = Number(String(v == null ? '' : v).replace(/[^\d]/g, ''));
+    if (!n) return '';
+    return 'Rp' + n.toLocaleString('id-ID');
+  }
+  function priceLabel(p) { return p && p.isFree === false ? (rupiah(p.priceAmount || p.price) || 'Berbayar') : 'Gratis'; }
   function initials(n) { return String(n || '?').split(/\s+/).slice(0, 2).map(function (x) { return x[0] || ''; }).join('').toUpperCase(); }
 
   /* Markdown ringan (aman: di-escape dulu) */
@@ -68,7 +74,7 @@
     phone: 'M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z',
     pin: 'M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0zM12 13a3 3 0 100-6 3 3 0 000 6z', help: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01',
     layers: 'M12 2l10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5', list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
-    play: 'M5 3l14 9-14 9z', star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', arrow: 'M5 12h14M12 5l7 7-7 7', lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4'
+    play: 'M5 3l14 9-14 9z', wallet: 'M3 7a2 2 0 012-2h13v4M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2zM16 14.5h.01', star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', arrow: 'M5 12h14M12 5l7 7-7 7', lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4'
   };
   function icon(n, s) { return '<svg class="ic" width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (P[n] || P.file) + '"/></svg>'; }
 
@@ -122,7 +128,7 @@
       case 'select': inp = '<select id="' + id + '" name="' + f.name + '"' + req + '>' + (f.options || []).map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; break;
       case 'checkbox': return '<div class="field check" data-field="' + f.name + '"><label><input type="checkbox" id="' + id + '" name="' + f.name + '"' + (v ? ' checked' : '') + '> ' + esc(f.label) + '</label>' + help + '</div>';
       case 'file': inp = '<input type="file" id="' + id + '" name="' + f.name + '" accept="' + esc(f.accept || '') + '"' + req + '>' + (f.current ? '<small class="help">File saat ini: ' + esc(f.current) + '</small>' : ''); break;
-      case 'html': return '<div class="field" data-field="' + f.name + '">' + f.html + '</div>';
+      case 'html': return '<div class="field' + (f.full !== false ? ' full' : '') + '" data-field="' + f.name + '" style="grid-column:' + (f.full !== false ? '1 / -1' : 'auto') + '">' + f.html + '</div>';
       default: inp = '<input type="' + (f.type || 'text') + '" id="' + id + '" name="' + f.name + '" value="' + esc(v) + '"' + req + (f.min != null ? ' min="' + f.min + '"' : '') + (f.max != null ? ' max="' + f.max + '"' : '') + (f.minlength ? ' minlength="' + f.minlength + '"' : '') + ' placeholder="' + esc(f.placeholder || '') + '"' + (f.type === 'password' ? ' autocomplete="new-password"' : '') + '>';
     }
     return '<div class="field' + (f.full ? ' full' : '') + '" data-field="' + f.name + '">' + lab + inp + help + '<small class="err"></small></div>';
@@ -337,8 +343,8 @@
   var MENUS = {
     learner: [['#/dashboard', 'Dashboard', 'grid'], ['#/my-learning', 'Kelas Saya', 'book'], ['#/my-assessments', 'Kuis & Tugas', 'quiz'], ['#/results', 'Hasil Belajar', 'chart'], ['#/certificates', 'Sertifikat Saya', 'award'], ['#/programs', 'Jelajahi Program', 'search']],
     trainer: [['#/dashboard', 'Dashboard', 'grid'], ['#/manage/content', 'Materi, Kuis & Assessment', 'layers'], ['#/grading', 'Penilaian Tugas', 'task'], ['#/manage/learners', 'Progres Peserta', 'users'], ['#/schedule', 'Jadwal Mengajar', 'cal']],
-    coach: [['#/dashboard', 'Dashboard', 'grid'], ['#/manage/classes', 'Kelas & Jadwal', 'cal'], ['#/manage/content', 'Materi, Kuis & Assessment', 'layers'], ['#/grading', 'Penilaian Tugas', 'task'], ['#/manage/learners', 'Peserta & Progres', 'users'], ['#/reports', 'Laporan', 'chart']],
-    admin: [['#/dashboard', 'Dashboard', 'grid'], ['#/admin/users', 'Pengguna & Role', 'users'], ['#/admin/programs', 'Program & Kategori', 'book'], ['#/manage/classes', 'Kelas & Jadwal', 'cal'], ['#/manage/content', 'Materi, Kuis & Assessment', 'layers'], ['#/grading', 'Penilaian Tugas', 'task'], ['#/admin/certificates', 'Sertifikat', 'award'], ['#/admin/cms', 'Konten Website', 'news'], ['#/reports', 'Laporan & Analitik', 'chart'], ['#/admin/logs', 'Log Aktivitas', 'activity'], ['#/admin/settings', 'Pengaturan Website', 'cog']],
+    coach: [['#/dashboard', 'Dashboard', 'grid'], ['#/manage/classes', 'Kelas & Jadwal', 'cal'], ['#/manage/content', 'Materi, Kuis & Assessment', 'layers'], ['#/grading', 'Penilaian Tugas', 'task'], ['#/manage/learners', 'Peserta & Progres', 'users'], ['#/payments', 'Pembayaran', 'wallet'], ['#/reports', 'Laporan', 'chart']],
+    admin: [['#/dashboard', 'Dashboard', 'grid'], ['#/admin/users', 'Pengguna & Role', 'users'], ['#/admin/programs', 'Program & Kategori', 'book'], ['#/manage/classes', 'Kelas & Jadwal', 'cal'], ['#/manage/content', 'Materi, Kuis & Assessment', 'layers'], ['#/grading', 'Penilaian Tugas', 'task'], ['#/payments', 'Pembayaran', 'wallet'], ['#/admin/certificates', 'Sertifikat', 'award'], ['#/admin/cms', 'Konten Website', 'news'], ['#/reports', 'Laporan & Analitik', 'chart'], ['#/admin/logs', 'Log Aktivitas', 'activity'], ['#/admin/settings', 'Pengaturan Website', 'cog']],
     executive: [['#/dashboard', 'Executive Dashboard', 'grid'], ['#/reports', 'Laporan Kinerja', 'chart']]
   };
   function appLayout(content, opts) {
@@ -440,6 +446,7 @@
   }
 
   window.UI = {
+    rupiah: rupiah, priceLabel: priceLabel,
     $: $, $$: $$, esc: esc, safeUrl: safeUrl, fmtDate: fmtDate, toLocalInput: toLocalInput, md: md, icon: icon, toast: toast, modal: modal, closeModal: closeModal,
     confirm: confirmBox, formModal: formModal, fieldHTML: fieldHTML, readForm: readForm, readImage: readImage, storeFile: storeFile, openStoredFile: openStoredFile,
     badge: badge, statusBadge: statusBadge, progressBar: progressBar, avatar: avatar, empty: empty, stat: stat, logoHTML: logoHTML, programThumb: programThumb,

@@ -14,7 +14,8 @@
     var activeL = users.filter(function (u) { return u.role === 'learner' && ens.some(function (e) { return e.userId === u.id && e.status === 'active'; }); }).length;
     var logs = DB.all('logs').slice(0, 8);
     var msgs = (DB.data.messages || []).filter(function (m) { return !m.read; }).length;
-    var html = '<div class="stats">' + UI.stat('Total akun', users.length, 'users', cnt('learner') + ' learner • ' + (cnt('trainer') + cnt('coach')) + ' trainer/coach') + UI.stat('Peserta aktif', activeL, 'activity') + UI.stat('Program', DB.all('programs').length, 'book', DB.where('programs', function (p) { return p.status === 'published'; }).length + ' dipublikasikan') + UI.stat('Sertifikat terbit', DB.all('certificates').length, 'award') + '</div>' +
+    var pendPay = DB.where('payments', function (x) { return x.status === 'pending'; }).length;
+    var html = (pendPay ? '<a class="notice warn row" href="#/payments" style="text-decoration:none">' + icon('wallet', 16) + ' <b>' + pendPay + ' pembayaran</b> menunggu verifikasi. <span class="grow"></span>Verifikasi sekarang →</a>' : '') + '<div class="stats">' + UI.stat('Total akun', users.length, 'users', cnt('learner') + ' learner • ' + (cnt('trainer') + cnt('coach')) + ' trainer/coach') + UI.stat('Peserta aktif', activeL, 'activity') + UI.stat('Program', DB.all('programs').length, 'book', DB.where('programs', function (p) { return p.status === 'published'; }).length + ' dipublikasikan') + UI.stat('Sertifikat terbit', DB.all('certificates').length, 'award') + '</div>' +
       '<div class="grid3">' +
       '<div class="card"><div class="card-title"><h3>Learning Overview</h3></div><dl class="kv"><dt>Kelas</dt><dd>' + DB.all('classes').length + '</dd><dt>Modul</dt><dd>' + DB.all('modules').length + '</dd><dt>Materi</dt><dd>' + DB.all('lessons').length + '</dd><dt>Kuis & assessment</dt><dd>' + DB.all('assessments').length + '</dd><dt>Tugas menunggu nilai</dt><dd>' + DB.where('submissions', function (s) { return s.status === 'submitted'; }).length + '</dd></dl><a class="btn btn-soft btn-sm mt" href="#/manage/content">Kelola materi</a></div>' +
       '<div class="card"><div class="card-title"><h3>Konten Website</h3></div><dl class="kv"><dt>Artikel</dt><dd>' + DB.all('articles').length + '</dd><dt>Testimoni</dt><dd>' + DB.all('testimonials').length + '</dd><dt>FAQ</dt><dd>' + DB.all('faqs').length + '</dd><dt>Pengumuman</dt><dd>' + DB.all('announcements').length + '</dd><dt>Pesan baru</dt><dd>' + msgs + '</dd></dl><a class="btn btn-soft btn-sm mt" href="#/admin/cms">Kelola konten</a></div>' +
@@ -111,7 +112,7 @@
     }
     html += '<div class="cards">' + DB.all('programs').map(function (p) {
       var cat = DB.find('categories', p.categoryId), n = DB.where('enrollments', function (e) { return e.programId === p.id; }).length;
-      return '<div class="card pcard">' + UI.programThumb(p) + '<div class="pc-body"><div class="row">' + UI.statusBadge(p.status) + (p.featured ? UI.badge('Unggulan', 'dark') : '') + '</div><h3>' + esc(p.title) + '</h3><p>' + esc(cat ? cat.name : '') + ' • ' + esc(p.level) + ' • ' + n + ' peserta</p>' +
+      return '<div class="card pcard">' + UI.programThumb(p) + '<div class="pc-body"><div class="row">' + UI.statusBadge(p.status) + (p.featured ? UI.badge('Unggulan', 'dark') : '') + UI.badge(UI.priceLabel(p), p.isFree === false ? 'amber' : 'green') + '</div><h3>' + esc(p.title) + '</h3><p>' + esc(cat ? cat.name : '') + ' • ' + esc(p.level) + ' • ' + n + ' peserta</p>' +
         '<div class="row mt"><button class="btn btn-soft btn-xs" data-ep="' + esc(p.id) + '">' + icon('edit', 13) + ' Ubah</button><a class="btn btn-ghost btn-xs" href="#/manage/content/' + esc(p.id) + '">' + icon('layers', 13) + ' Materi</a><a class="btn btn-ghost btn-xs" href="#/program/' + esc(p.id) + '">' + icon('eye', 13) + ' Lihat</a><button class="btn btn-ghost btn-xs" data-dp="' + esc(p.id) + '" aria-label="Hapus">' + icon('trash', 13) + '</button></div></div></div>';
     }).join('') + '</div>';
     App.render(UI.appLayout(html, { title: 'Program & Kategori', actions: '<button class="btn btn-primary" id="addp">' + icon('plus', 16) + ' Tambah Program</button>' }));
@@ -157,7 +158,7 @@
         { name: 'objectives', label: 'Tujuan belajar (satu per baris)', type: 'textarea', rows: 4, value: p ? (p.objectives || []).join('\n') : '' },
         { name: 'status', label: 'Status', type: 'select', value: p ? p.status : 'draft', options: [['draft', 'Draft'], ['published', 'Published'], ['closed', 'Pendaftaran ditutup'], ['ongoing', 'Berlangsung'], ['completed', 'Selesai']] },
         { name: 'isFree', label: 'Biaya', type: 'select', value: p && p.isFree === false ? 'paid' : 'free', options: [['free', 'Gratis'], ['paid', 'Berbayar']] },
-        { name: 'price', label: 'Keterangan biaya', value: p ? p.price : '', placeholder: 'contoh: Rp150.000', show: function (v) { return v.isFree === 'paid'; } },
+        { name: 'price', label: 'Harga (Rp)', value: p ? (p.priceAmount || String(p.price || '').replace(/[^\d]/g, '')) : '', placeholder: 'contoh: 150000', required: true, help: 'Angka saja. Peserta wajib membayar & diverifikasi sebelum bisa masuk kelas.', show: function (v) { return v.isFree === 'paid'; } },
         { name: 'color', label: 'Warna thumbnail', type: 'color', value: p ? p.color : '#6D28D9' },
         { name: 'thumb', label: 'Gambar thumbnail (opsional)', type: 'file', accept: 'image/*' },
         { name: 'removeThumb', label: 'Hapus gambar thumbnail', type: 'checkbox', value: false, show: function () { return !!(p && p.thumbnail); } },
@@ -165,7 +166,10 @@
       ],
       onSubmit: function (v) {
         return UI.readImage(v.thumb, 800, 'image/jpeg').then(function (img) {
-          var patch = { title: v.title, categoryId: v.categoryId, trainerId: v.trainerId, level: v.level, duration: v.duration, summary: v.summary, description: v.description, objectives: v.objectives.split('\n').map(function (x) { return x.trim(); }).filter(Boolean), status: v.status, isFree: v.isFree === 'free', price: v.price || '', color: v.color, featured: v.featured };
+          var amount = Number(String(v.price || '').replace(/[^\d]/g, ''));
+          if (v.isFree === 'paid' && !amount) { UI.toast('Isi harga program berbayar (angka, contoh 150000).', 'error'); return false; }
+          if (v.isFree === 'paid' && !DB.settings().payQris && !['payDana', 'payOvo', 'payGopay', 'payShopeepay', 'payLinkaja', 'payBankAccount'].some(function (k) { return DB.settings()[k]; })) UI.toast('Ingat: isi QRIS / nomor e-wallet di Pengaturan Website › Pembayaran.', 'info');
+          var patch = { title: v.title, categoryId: v.categoryId, trainerId: v.trainerId, level: v.level, duration: v.duration, summary: v.summary, description: v.description, objectives: v.objectives.split('\n').map(function (x) { return x.trim(); }).filter(Boolean), status: v.status, isFree: v.isFree === 'free', price: v.isFree === 'paid' ? UI.rupiah(amount) : '', priceAmount: v.isFree === 'paid' ? amount : 0, color: v.color, featured: v.featured };
           if (img) patch.thumbnail = img; else if (v.removeThumb) patch.thumbnail = null;
           if (p) DB.update('programs', p.id, patch); else DB.insert('programs', Object.assign(patch, { thumbnail: patch.thumbnail || null, sequential: false }));
           DB.log((p ? 'Mengubah' : 'Membuat') + ' program ' + v.title, 'program'); UI.toast('Program disimpan.'); App.refresh();
@@ -244,7 +248,7 @@
   /* ---------- Pengaturan Website (khusus Admin) ---------- */
   Pages.adminSettings = function (params, q) {
     var tab = q.tab || 'identity', s = DB.settings();
-    var tabs = [['identity', 'Identitas & Logo'], ['contact', 'Kontak & Media Sosial'], ['profile', 'Profil Lembaga'], ['home', 'Beranda'], ['cert', 'Sertifikat'], ['system', 'Sistem & Data']];
+    var tabs = [['identity', 'Identitas & Logo'], ['contact', 'Kontak & Media Sosial'], ['profile', 'Profil Lembaga'], ['home', 'Beranda'], ['cert', 'Sertifikat'], ['pay', 'Pembayaran'], ['system', 'Sistem & Data']];
     var F = {
       identity: [
         { name: 'siteName', label: 'Nama website', value: s.siteName, required: true },
@@ -274,6 +278,18 @@
         { name: 'heroImage', label: 'Gambar latar hero (opsional, menggantikan latar pita animasi)', type: 'file', accept: 'image/*', full: true },
         { name: 'removeHero', label: 'Hapus gambar hero', type: 'checkbox', value: false }
       ],
+      pay: [
+        { name: 'payHolder', label: 'Nama penerima (atas nama)', value: s.payHolder, full: true, help: 'Ditampilkan ke peserta agar yakin transfer ke akun yang benar.' },
+        { name: 'payDana', label: 'Nomor DANA', value: s.payDana, placeholder: '08xxxxxxxxxx' },
+        { name: 'payOvo', label: 'Nomor OVO', value: s.payOvo, placeholder: '08xxxxxxxxxx' },
+        { name: 'payGopay', label: 'Nomor GoPay', value: s.payGopay, placeholder: '08xxxxxxxxxx' },
+        { name: 'payShopeepay', label: 'Nomor ShopeePay', value: s.payShopeepay, placeholder: '08xxxxxxxxxx' },
+        { name: 'payLinkaja', label: 'Nomor LinkAja', value: s.payLinkaja, placeholder: '08xxxxxxxxxx' },
+        { name: 'payBankName', label: 'Nama bank (opsional)', value: s.payBankName, placeholder: 'contoh: BCA / BRI / Mandiri' },
+        { name: 'payBankAccount', label: 'Nomor rekening', value: s.payBankAccount },
+        { name: 'payBankHolder', label: 'Atas nama rekening', value: s.payBankHolder },
+        { name: 'payInstructions', label: 'Instruksi pembayaran untuk peserta', type: 'textarea', rows: 3, value: s.payInstructions }
+      ],
       cert: [
         { name: 'certIssuer', label: 'Nama penerbit sertifikat', value: s.certIssuer, required: true },
         { name: 'certSignerName', label: 'Nama penandatangan', value: s.certSignerName },
@@ -287,6 +303,12 @@
         '<div class="grow"><p class="muted" style="font-size:.86rem">Format PNG, JPG, SVG, atau WEBP. Maks. 5 MB. Gambar akan diperkecil otomatis (maks. lebar 400px). Logo tampil di header, sidebar, footer, sertifikat, dan ikon tab.</p>' +
         '<label class="btn btn-primary btn-sm" for="logoin">' + icon('upload', 14) + ' Unggah Logo</label><input type="file" id="logoin" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="sr">' + (s.logo ? ' <button class="btn btn-ghost btn-sm" id="rmlogo">Hapus logo</button>' : '') + '</div></div>' +
         '<h4 class="mt2">Pratinjau header</h4><div class="card flat" style="padding:.8rem 1rem">' + UI.logoHTML(s) + '</div><div class="card flat mt" style="padding:.8rem 1rem;background:var(--ink)">' + UI.logoHTML(s, true) + '</div></div></div>';
+    } else if (tab === 'pay') {
+      body = '<div class="grid-21"><div class="card"><h3>Nomor E-Wallet & Rekening</h3><p class="muted" style="font-size:.88rem">Kosongkan yang tidak dipakai — hanya yang diisi yang ditampilkan ke peserta.</p><form id="sf" class="form-grid" novalidate>' + F.pay.map(UI.fieldHTML).join('') + '<div class="field full"><button class="btn btn-primary">' + icon('check', 16) + ' Simpan Pembayaran</button></div></form></div>' +
+        '<div class="card"><h3>QRIS</h3><p class="muted" style="font-size:.86rem">Unggah gambar QRIS dari aplikasi merchant Anda (PNG/JPG, jelas & tidak terpotong). Peserta dapat memindai atau mengunduhnya.</p>' +
+        '<div class="qris-prev mb">' + (s.payQris ? '<img src="' + s.payQris + '" alt="QRIS">' : '<div class="empty" style="padding:1.5rem">' + icon('wallet', 32) + '<p>Belum ada QRIS</p></div>') + '</div>' +
+        '<div class="row"><label class="btn btn-primary btn-sm" for="qrisin">' + icon('upload', 14) + ' ' + (s.payQris ? 'Ganti QRIS' : 'Unggah QRIS') + '</label><input type="file" id="qrisin" accept="image/png,image/jpeg,image/webp" class="sr">' + (s.payQris ? '<button class="btn btn-ghost btn-sm" id="rmqris">Hapus</button>' : '') + '</div>' +
+        '<div class="notice mt" style="font-size:.85rem">' + icon('shield', 14) + ' Peserta program berbayar baru bisa masuk kelas setelah Admin/Coach menyetujui bukti bayarnya di menu <a href="#/payments">Pembayaran</a>.</div></div></div>';
     } else if (tab === 'system' && DB.online) {
       body = '<div class="grid2" style="align-items:start"><div class="card"><h3>Pendaftaran Peserta</h3><label class="row" style="gap:.5rem"><input type="checkbox" id="allowreg"' + (s.allowRegistration !== false ? ' checked' : '') + '> Izinkan pengunjung membuat akun peserta sendiri</label>' +
         '<h3 class="mt2">Cadangan Data</h3><p class="muted" style="font-size:.9rem">Unduh salinan seluruh data (tanpa file PDF) sebagai arsip.</p><button class="btn btn-ghost" id="exp">' + icon('download', 16) + ' Ekspor backup (.json)</button></div>' +
@@ -328,6 +350,14 @@
         DB.setSettings({ logo: img }); DB.log('Mengunggah logo baru', 'settings'); UI.toast('Logo berhasil diperbarui.'); App.refresh();
       }).catch(function (err) { UI.toast(err.message, 'error'); });
     };
+    var qi = UI.$('#qrisin');
+    if (qi) qi.onchange = function () {
+      UI.readImage(qi.files[0], 1000, 'image/png').then(function (img) {
+        if (!img) return;
+        DB.setSettings({ payQris: img }); DB.log('Mengunggah QRIS pembayaran', 'settings'); UI.toast('QRIS berhasil disimpan.'); App.refresh();
+      }).catch(function (err) { UI.toast(err.message, 'error'); });
+    };
+    var rq = UI.$('#rmqris'); if (rq) rq.onclick = function () { UI.confirm('Hapus gambar QRIS?', function () { DB.setSettings({ payQris: null }); UI.toast('QRIS dihapus.'); App.refresh(); }, 'Hapus'); };
     var rl = UI.$('#rmlogo'); if (rl) rl.onclick = function () { DB.setSettings({ logo: null }); UI.toast('Logo dihapus.'); App.refresh(); };
 
     if (tab === 'system') {

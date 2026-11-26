@@ -16,7 +16,7 @@
     var cat = DB.find('categories', p.categoryId), tr = DB.find('users', p.trainerId);
     var nLes = DB.programLessons(p.id).length;
     return '<a class="card pcard hover" href="#/program/' + esc(p.id) + '">' + UI.programThumb(p) +
-      '<div class="pc-body"><div class="row">' + UI.badge(cat ? cat.name : 'Umum', 'purple') + UI.badge(p.level, 'gray') + '</div>' +
+      '<div class="pc-body"><div class="row">' + UI.badge(cat ? cat.name : 'Umum', 'purple') + UI.badge(p.level, 'gray') + UI.badge(UI.priceLabel(p), p.isFree === false ? 'amber' : 'green') + '</div>' +
       '<h3>' + esc(p.title) + '</h3><p>' + esc(p.summary) + '</p>' +
       '<div class="pc-meta"><span>' + icon('book', 14) + ' ' + nLes + ' materi</span><span>' + icon('clock', 14) + ' ' + esc(p.duration) + '</span>' + (tr ? '<span>' + icon('user', 14) + ' ' + esc(tr.name) + '</span>' : '') + '</div></div></a>';
   }
@@ -129,13 +129,16 @@
       var n = enrolledCount(k.id), full = n >= k.capacity;
       return '<div class="batch ' + (full ? 'full' : '') + '"><div class="row between"><b>' + esc(k.name) + '</b>' + UI.statusBadge(k.status) + '</div>' +
         '<dl class="kv mt"><dt>Jadwal</dt><dd>' + UI.fmtDate(k.startAt) + ' – ' + UI.fmtDate(k.endAt) + '</dd><dt>Format</dt><dd>' + esc(k.mode) + '</dd><dt>Lokasi</dt><dd>' + esc(k.location || '-') + '</dd><dt>Kuota</dt><dd>' + n + ' / ' + k.capacity + ' peserta</dd></dl>' +
-        (en ? '' : '<button class="btn btn-primary btn-sm mt" style="width:100%" data-enroll="' + esc(k.id) + '"' + (full ? ' disabled' : '') + '>' + (full ? 'Kuota Penuh' : 'Daftar Kelas Ini') + '</button>') + '</div>';
+        (en ? '' : '<button class="btn btn-primary btn-sm mt" style="width:100%" data-enroll="' + esc(k.id) + '"' + (full ? ' disabled' : '') + '>' + (full ? 'Kuota Penuh' : (DB.isPaid(p) ? 'Daftar & Bayar' : 'Daftar Kelas Ini')) + '</button>') + '</div>';
     }).join('') : '<p class="muted">Belum ada jadwal kelas yang dibuka. Pantau terus halaman ini.</p>';
 
     var side = '<div class="card sticky">' +
-      (en ? '<div class="notice mb">' + icon('check', 16) + ' Anda sudah terdaftar di program ini.</div><a class="btn btn-primary" style="width:100%" href="#/learn/' + esc(p.id) + '">Masuk Ruang Kelas</a>' :
+      (DB.isPaid(p) ? '<div class="price-tag"><small>Biaya program</small><b>' + esc(UI.priceLabel(p)) + '</b></div>' : '') +
+      (en && en.status === 'pending_payment' ? '<div class="notice warn mb">' + icon('clock', 16) + ' Bukti pembayaran Anda sedang diverifikasi admin.</div><a class="btn btn-primary" style="width:100%" href="#/learn/' + esc(p.id) + '">Lihat Status Pembayaran</a>' :
+       en && en.status === 'payment_rejected' ? '<div class="notice mb" style="background:var(--red-bg);border-color:#F5C2BE">' + icon('x', 16) + ' Pembayaran ditolak. Silakan kirim ulang bukti pembayaran.</div><a class="btn btn-primary" style="width:100%" href="#/learn/' + esc(p.id) + '">Kirim Ulang Bukti</a>' :
+       en ? '<div class="notice mb">' + icon('check', 16) + ' Anda sudah terdaftar di program ini.</div><a class="btn btn-primary" style="width:100%" href="#/learn/' + esc(p.id) + '">Masuk Ruang Kelas</a>' :
         '<h3>Jadwal & Pendaftaran</h3>' + batches) +
-      '<dl class="kv mt"><dt>Level</dt><dd>' + esc(p.level) + '</dd><dt>Durasi</dt><dd>' + esc(p.duration) + '</dd><dt>Biaya</dt><dd>' + (p.isFree !== false ? 'Gratis' : esc(p.price || 'Hubungi kami')) + '</dd><dt>Sertifikat</dt><dd>E-sertifikat + kode verifikasi</dd></dl></div>';
+      '<dl class="kv mt"><dt>Level</dt><dd>' + esc(p.level) + '</dd><dt>Durasi</dt><dd>' + esc(p.duration) + '</dd><dt>Biaya</dt><dd>' + esc(UI.priceLabel(p)) + '</dd><dt>Sertifikat</dt><dd>E-sertifikat + kode verifikasi</dd></dl></div>';
 
     var html = pageHero(p.title, p.summary, '<a href="#/">Beranda</a> / <a href="#/programs">Program</a> / ' + esc(cat ? cat.name : '')) +
       '<section class="section"><div class="container detail-grid"><div>' +
@@ -164,6 +167,7 @@
     var k = DB.find('classes', kid), p = DB.find('programs', pid);
     if (DB.enrollment(u.id, pid)) return location.hash = '#/learn/' + pid;
     if (enrolledCount(kid) >= k.capacity) return UI.toast('Kuota kelas sudah penuh.', 'error');
+    if (DB.isPaid(p)) return Pages.payModal(p, k, null);
     UI.modal({
       title: 'Konfirmasi Pendaftaran',
       body: '<p>Anda akan mendaftar ke:</p><div class="card flat"><b>' + esc(p.title) + '</b><p class="muted" style="margin:0">' + esc(k.name) + ' • ' + UI.fmtDate(k.startAt) + ' – ' + UI.fmtDate(k.endAt) + '</p></div><p class="mt muted">Dengan mendaftar, Anda menyetujui ketentuan penggunaan platform.</p>',

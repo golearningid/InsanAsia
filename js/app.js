@@ -46,6 +46,7 @@
     ['/schedule', function (p, q) { P.schedule(p, q); }, ['trainer', 'coach']],
     ['/manage/classes', function (p, q) { P.manageClasses(p, q); }, ['coach', 'admin']],
     ['/reports', function (p, q) { P.reports(p, q); }, ['coach', 'admin', 'executive']],
+    ['/payments', function (p, q) { P.payments(p, q); }, ['coach', 'admin']],
 
     ['/admin/users', function (p, q) { P.adminUsers(p, q); }, ['admin']],
     ['/admin/programs', function (p, q) { P.adminPrograms(p, q); }, ['admin']],
