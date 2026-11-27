@@ -1767,6 +1767,85 @@ body:has(.auth2) .scroll-bar, body:has(.auth2) .totop { display: none !important
   .hero .hero-bg { transform: translate3d(0, calc(var(--hp, 0) * 120px), 0); transition: none; }
 }
 
+/* =========================================================
+   KARTU PROGRAM & ARTIKEL — premium, ringan (tanpa blur berat)
+   ========================================================= */
+.cards { align-items: stretch; }
+a.pcard.pc2, a.pcard.ac2 { --lift: 0px; position: relative; display: flex; flex-direction: column; padding: 10px; border-radius: 26px; overflow: hidden; color: inherit;
+  background: linear-gradient(180deg, #fff, #FDFBFF); border: 1px solid #EEE8FB;
+  box-shadow: 0 1px 0 #fff inset, 0 1px 2px rgba(76, 29, 149, .05), 0 10px 28px rgba(76, 29, 149, .07);
+  transform: translateY(var(--lift)) !important; transition: transform .45s cubic-bezier(.22, 1, .36, 1), box-shadow .45s, border-color .45s !important; will-change: auto; }
+a.pcard.pc2::after, a.pcard.ac2::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px; opacity: 0; transition: opacity .45s;
+  background: linear-gradient(140deg, #A78BFA, rgba(240, 171, 252, .7) 40%, rgba(167, 139, 250, .1) 70%, #C084FC);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+a.pcard.pc2:hover, a.pcard.ac2:hover { --lift: -8px; border-color: transparent; box-shadow: 0 1px 0 #fff inset, 0 24px 50px rgba(76, 29, 149, .16), 0 6px 16px rgba(124, 58, 237, .1); }
+a.pcard.pc2:hover::after, a.pcard.ac2:hover::after { opacity: 1; }
+/* media berbingkai */
+.pc-media { position: relative; border-radius: 18px; overflow: hidden; isolation: isolate; background: #F3EEFF; }
+.pc-media .thumb { border-radius: 0; transition: transform .8s cubic-bezier(.22, 1, .36, 1), filter .5s; transform: scale(1.001); }
+a.pcard.pc2:hover .pc-media .thumb, a.pcard.ac2:hover .pc-media .thumb { transform: scale(1.06); }
+.pc-media::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(17, 8, 40, .28) 0%, transparent 30%, transparent 70%, rgba(17, 8, 40, .18) 100%); }
+.pc-media::before { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .45) 50%, transparent 65%); transform: translateX(-120%); }
+a.pcard.pc2:hover .pc-media::before, a.pcard.ac2:hover .pc-media::before { transform: translateX(120%); transition: transform .9s cubic-bezier(.22, 1, .36, 1); }
+.pc-cat, .pc-price, .pc-read { position: absolute; z-index: 3; top: 10px; display: inline-flex; align-items: center; gap: .3rem; max-width: 62%; padding: .32rem .65rem; border-radius: 99px; font-size: .7rem; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-cat { left: 10px; color: #fff; background: rgba(23, 12, 54, .55); border: 1px solid rgba(255, 255, 255, .22); box-shadow: 0 4px 12px rgba(0, 0, 0, .15); }
+.pc-price { right: 10px; color: #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .4); }
+.pc-price.free { background: linear-gradient(180deg, rgba(255, 255, 255, .25), rgba(255, 255, 255, 0) 60%), linear-gradient(135deg, #10B981, #059669); }
+.pc-price.paid { background: linear-gradient(180deg, rgba(255, 255, 255, .25), rgba(255, 255, 255, 0) 60%), linear-gradient(135deg, #8B5CF6, #C026D3); }
+.pc-read { top: auto; bottom: 10px; right: 10px; color: #4C1D95; background: rgba(255, 255, 255, .9); box-shadow: 0 4px 12px rgba(0, 0, 0, .12); }
+/* isi */
+.pc2 .pc-body, .ac2 .pc-body { padding: 1rem .7rem .45rem; gap: .55rem; }
+.pc-tags { display: flex; gap: .4rem; flex-wrap: wrap; }
+.pc-lv, .pc-hot { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 700; }
+.pc-lv { color: #5B21B6; background: #F3EEFF; }
+.pc-hot { color: #B45309; background: #FFF4E0; }
+.pc2 h3, .ac2 h3 { font-size: 1.1rem; line-height: 1.3; letter-spacing: -.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color .3s; }
+.pc2:hover h3, .ac2:hover h3 { color: #5B21B6; }
+.pc2 p, .ac2 p { font-size: .88rem !important; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pc2 .pc-meta { margin-top: .1rem; padding-top: 0; gap: .45rem; }
+.pc2 .pc-meta span { display: inline-flex; align-items: center; gap: .3rem; padding: .28rem .6rem; border-radius: 10px; background: #F8F6FD; border: 1px solid #F0EBFA; font-size: .76rem; font-weight: 600; color: #5E5776; }
+.pc-foot { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: auto; padding-top: .8rem; border-top: 1px dashed #ECE6F8; }
+.pc-team { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.pc-faces { display: flex; flex: none; }
+.pc-faces .avatar { margin-left: -8px; box-shadow: 0 0 0 2px #fff; }
+.pc-faces .avatar:first-child { margin-left: 0; }
+.pc-team small { font-size: .78rem; font-weight: 600; color: #4A4362; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-team small b { color: #7C3AED; }
+.pc-go { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #6D28D9; background: #F3EEFF; transition: background .35s, color .35s, transform .45s cubic-bezier(.34, 1.56, .64, 1), box-shadow .35s; }
+.pc2:hover .pc-go { color: #fff; background: linear-gradient(180deg, rgba(255, 255, 255, .25), rgba(255, 255, 255, 0) 55%), var(--grad); box-shadow: 0 8px 18px rgba(124, 58, 237, .4); transform: rotate(-45deg); }
+.ac-date { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; font-weight: 700; color: #7C3AED; }
+.ac-more { display: inline-flex; align-items: center; gap: .35rem; font-size: .82rem; font-weight: 800; color: #6D28D9; padding: .45rem .8rem; border-radius: 99px; background: #F3EEFF; transition: gap .35s, background .35s, color .35s; }
+.ac2:hover .ac-more { gap: .6rem; color: #fff; background: var(--grad); }
+@media (hover: none) { a.pcard.pc2:hover, a.pcard.ac2:hover { --lift: 0px; } }
+@media (prefers-reduced-motion: reduce) { a.pcard.pc2, a.pcard.ac2, .pc-media .thumb { transition: none !important; } }
+
+/* =========================================================
+   "KENAPA BELAJAR" — panel bulat rapi (tanpa efek memudar)
+   ========================================================= */
+.why-sec { margin: 1.5rem clamp(10px, 2.2vw, 28px); border-radius: 36px; padding: 6rem 0 !important; box-shadow: 0 30px 70px rgba(46, 16, 101, .25); }
+.why-fx { -webkit-mask-image: none !important; mask-image: none !important; border-radius: inherit; overflow: hidden; }
+.why-sec::after { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .04) 40%, rgba(240, 171, 252, .3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.why-aurora { background: linear-gradient(120deg, #1A0B3D 0%, #2E1065 22%, #4C1D95 42%, #6B21A8 58%, #3B0F70 78%, #1A0B3D 100%); background-size: 240% 240%; }
+@media (max-width: 980px) { .why-sec { padding: 4.2rem 0 !important; border-radius: 28px; margin: 1rem 10px; } }
+
+/* =========================================================
+   SENTUHAN SERAGAM: testimoni, FAQ, judul seksi
+   ========================================================= */
+.card.quote { border-radius: 24px; border: 1px solid #EEE8FB; background: linear-gradient(180deg, #fff, #FDFBFF); box-shadow: 0 10px 28px rgba(76, 29, 149, .07); transition: transform .45s cubic-bezier(.22, 1, .36, 1), box-shadow .45s; }
+.card.quote::before { content: '\201C'; position: absolute; right: 18px; top: -6px; font-size: 5rem; line-height: 1; font-family: Georgia, serif; color: rgba(167, 139, 250, .25); }
+.card.quote:hover { transform: translateY(-5px); box-shadow: 0 22px 46px rgba(76, 29, 149, .13); }
+.faq details { border-radius: 18px; border-color: #EEE8FB; box-shadow: 0 4px 14px rgba(76, 29, 149, .04); }
+.faq details[open] { border-color: #D8CCFB; box-shadow: 0 14px 32px rgba(76, 29, 149, .09); background: linear-gradient(180deg, #fff, #FBF9FF); }
+.faq summary::after { color: #7C3AED; }
+.sec-head .eyebrow { display: inline-flex; align-items: center; gap: .45rem; }
+.sec-head .eyebrow::before { content: ''; width: 18px; height: 2px; border-radius: 2px; background: var(--grad); }
+.why-sec .sec-head .eyebrow::before { display: none; }
+.pc-media .thumb.gen { padding: 3rem 1.1rem 1.1rem; }
+.ac2 .pc-media .thumb.gen { padding-bottom: 2.8rem; }
+.ac2 .pc-media .thumb.gen b { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
   </style>
 </head>
 <body>
@@ -3148,11 +3227,20 @@ body:has(.auth2) .scroll-bar, body:has(.auth2) .totop { display: none !important
 
   function programCard(p) {
     var cat = DB.find('categories', p.categoryId), tr = DB.find('users', p.trainerId);
-    var nLes = DB.programLessons(p.id).length;
-    return '<a class="card pcard hover" href="#/program/' + esc(p.id) + '">' + UI.programThumb(p) +
-      '<div class="pc-body"><div class="row">' + UI.badge(cat ? cat.name : 'Umum', 'purple') + UI.badge(p.level, 'gray') + UI.badge(UI.priceLabel(p), p.isFree === false ? 'amber' : 'green') + '</div>' +
-      '<h3>' + esc(p.title) + '</h3><p>' + esc(p.summary) + '</p>' +
-      '<div class="pc-meta"><span>' + icon('book', 14) + ' ' + nLes + ' materi</span><span>' + icon('clock', 14) + ' ' + esc(p.duration) + '</span>' + (tr ? '<span>' + icon('user', 14) + ' ' + esc(tr.name) + ((p.coTrainers || []).length ? ' +' + p.coTrainers.length : '') + '</span>' : '') + '</div></div></a>';
+    var nLes = DB.programLessons(p.id).length, paid = p.isFree === false;
+    var team = [tr].concat((p.coTrainers || []).map(function (id) { return DB.find('users', id); })).filter(Boolean);
+    var faces = team.slice(0, 3).map(function (u) { return UI.avatar(u, 28); }).join('');
+    return '<a class="card pcard pc2 hover" href="#/program/' + esc(p.id) + '">' +
+      '<div class="pc-media">' + UI.programThumb(p) +
+        '<span class="pc-cat">' + esc(cat ? cat.name : 'Umum') + '</span>' +
+        '<span class="pc-price ' + (paid ? 'paid' : 'free') + '">' + (paid ? icon('wallet', 12) + ' ' : '') + esc(UI.priceLabel(p)) + '</span></div>' +
+      '<div class="pc-body">' +
+        '<div class="pc-tags"><span class="pc-lv">' + icon('chart', 12) + ' ' + esc(p.level || 'Semua level') + '</span>' + (p.featured ? '<span class="pc-hot">★ Unggulan</span>' : '') + '</div>' +
+        '<h3>' + esc(p.title) + '</h3><p>' + esc(p.summary) + '</p>' +
+        '<div class="pc-meta"><span>' + icon('book', 14) + ' ' + nLes + ' materi</span>' + (p.duration ? '<span>' + icon('clock', 14) + ' ' + esc(p.duration) + '</span>' : '') + '</div>' +
+        '<div class="pc-foot">' + (team.length ? '<div class="pc-team"><span class="pc-faces">' + faces + '</span><small>' + esc(tr ? tr.name : team[0].name) + (team.length > 1 ? ' <b>+' + (team.length - 1) + '</b>' : '') + '</small></div>' : '<span></span>') +
+          '<span class="pc-go" aria-hidden="true">' + icon('arrow', 16) + '</span></div>' +
+      '</div></a>';
   }
   Pages.programCard = programCard;
 
@@ -3221,8 +3309,13 @@ body:has(.auth2) .scroll-bar, body:has(.auth2) .totop { display: none !important
 
   function articleCard(a) {
     var au = DB.find('users', a.authorId);
-    return '<a class="card pcard hover" href="#/article/' + esc(a.id) + '">' + (a.cover ? '<div class="thumb" style="background-image:url(' + a.cover + ')"></div>' : '<div class="thumb gen" style="--tc:#4C1D95"><span>Artikel</span><b>' + esc(a.title) + '</b></div>') +
-      '<div class="pc-body"><h3>' + esc(a.title) + '</h3><p>' + esc(a.excerpt) + '</p><div class="pc-meta"><span>' + icon('cal', 14) + ' ' + UI.fmtDate(a.date) + '</span>' + (au ? '<span>' + icon('user', 14) + ' ' + esc(au.name) + '</span>' : '') + '</div></div></a>';
+    var words = String((a.body || a.content || '') + ' ' + (a.excerpt || '')).split(/\s+/).length, mins = Math.max(1, Math.round(words / 200));
+    return '<a class="card pcard ac2 hover" href="#/article/' + esc(a.id) + '">' +
+      '<div class="pc-media">' + (a.cover ? '<div class="thumb" style="background-image:url(' + a.cover + ')"></div>' : '<div class="thumb gen" style="--tc:#4C1D95"><span>Artikel</span><b>' + esc(a.title) + '</b></div>') +
+        '<span class="pc-cat">' + icon('news', 12) + ' Artikel</span><span class="pc-read">' + icon('clock', 12) + ' ' + mins + ' mnt baca</span></div>' +
+      '<div class="pc-body"><div class="ac-date">' + icon('cal', 13) + ' ' + UI.fmtDate(a.date) + '</div><h3>' + esc(a.title) + '</h3>' + (a.excerpt ? '<p>' + esc(a.excerpt) + '</p>' : '') +
+        '<div class="pc-foot">' + (au ? '<div class="pc-team"><span class="pc-faces">' + UI.avatar(au, 28) + '</span><small>' + esc(au.name) + '</small></div>' : '<span></span>') +
+        '<span class="ac-more">Baca ' + icon('arrow', 14) + '</span></div></div></a>';
   }
 
   function pageHero(title, desc, crumbs) {
@@ -5944,13 +6037,13 @@ body:has(.auth2) .scroll-bar, body:has(.auth2) .totop { display: none !important
     // kartu miring 3D + kilau mengikuti kursor
     if (fine && !reduce) {
       document.addEventListener('pointermove', function (e) {
-        var c = e.target.closest && e.target.closest('a.pcard, a.cat-card, .tilt'); if (!c) return;
+        var c = e.target.closest && e.target.closest('a.cat-card, .tilt'); if (!c) return;
         var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, yy = (e.clientY - r.top) / r.height;
         c.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); c.style.setProperty('--my', (yy * 100).toFixed(1) + '%');
         c.style.setProperty('--ry', ((x - .5) * 7).toFixed(2) + 'deg'); c.style.setProperty('--rx', ((.5 - yy) * 6).toFixed(2) + 'deg');
       }, { passive: true });
       document.addEventListener('pointerout', function (e) {
-        var c = e.target.closest && e.target.closest('a.pcard, a.cat-card, .tilt'); if (!c || c.contains(e.relatedTarget)) return;
+        var c = e.target.closest && e.target.closest('a.cat-card, .tilt'); if (!c || c.contains(e.relatedTarget)) return;
         c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg');
       });
     }
