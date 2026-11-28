@@ -992,7 +992,7 @@ a.notice.row { color: var(--ink-3); }
 .cx-band { position: relative; background: radial-gradient(circle at 20% 10%, rgba(255, 255, 255, .18), transparent 40%), linear-gradient(165deg, var(--cp) 0%, #120B24 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 4.5em 2em 3.5em; text-align: center; }
 .cx-band::after { content: ''; position: absolute; top: 0; bottom: 0; right: -.6em; width: .6em; background: var(--ca); }
 .cx-band-top { display: flex; flex-direction: column; align-items: center; gap: 1em; }
-.cx-band-top .cx-logo { background: #fff; padding: .5em .8em; border-radius: .8em; height: 5em; }
+.cx-band-top .cx-logo { background: transparent; padding: 0; height: 5em; filter: drop-shadow(0 .15em .4em rgba(0, 0, 0, .25)); }
 .cx-band-top span, .cx-band-foot { font-family: 'Cinzel', serif; letter-spacing: .25em; text-transform: uppercase; font-size: 1.05em; opacity: .85; }
 .cx-band .cx-seal { width: 13em; }
 .cx-main { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding: 5.5em 6em 3.6em 7em; text-align: left; }
@@ -1084,7 +1084,7 @@ a.notice.row { color: var(--ink-3); }
 .tpl-royal .cx-sign small { color: #CFC5EA; }
 .tpl-royal .cx-sign img { filter: invert(1) brightness(1.6); }
 .tpl-royal .cx-wm { color: #fff; opacity: .05; }
-.tpl-royal .cx-logo { background: #fff; padding: .35em .6em; border-radius: .6em; }
+.tpl-royal .cx-logo { background: transparent; padding: 0; filter: drop-shadow(0 .15em .4em rgba(0, 0, 0, .35)); }
 .tpl-royal .cx-stamp { mix-blend-mode: screen; }
 
 /* Emas Premium (art-deco) */
@@ -2827,7 +2827,7 @@ a.pcard.pc2:hover .pc-media::before, a.pcard.ac2:hover .pc-media::before { trans
           var w = img.width, h = img.height, s = Math.min(1, (maxW || 800) / w);
           var c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
           c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          res(c.toDataURL(type || (file.type === 'image/png' ? 'image/png' : 'image/jpeg'), 0.85));
+          res(c.toDataURL(type || (/png|webp|gif/.test(file.type) ? 'image/png' : 'image/jpeg'), 0.85));
         };
         img.onerror = function () { rej(new Error('Gambar tidak dapat dibaca.')); };
         img.src = fr.result;
